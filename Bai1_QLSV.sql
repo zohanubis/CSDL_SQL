@@ -14,7 +14,7 @@ CREATE TABLE LOP(
     TENLOP NVARCHAR(100),
     SISO INT, 
     LOPTRUONG VARCHAR(10), 
-    MAKH VARCHAR(10) NOT NULL,
+    MAKH VARCHAR(10),
     CONSTRAINT PK_LOP PRIMARY KEY (MALOP),
     CONSTRAINT FK_LOP_KHOA FOREIGN KEY (MAKH) REFERENCES KHOA (MAKH)
 );
@@ -24,7 +24,7 @@ CREATE TABLE SINHVIEN(
     NGSINH DATE, 
     GTINH NVARCHAR(5),
     DCHI NVARCHAR(100),
-    MALOP VARCHAR(10) NOT NULL, 
+    MALOP VARCHAR(10), 
     CONSTRAINT PK_SINHVIEN PRIMARY KEY (MASV),
     CONSTRAINT FK_SINHVIEN_LOP FOREIGN KEY (MALOP) REFERENCES LOP(MALOP)
 );
@@ -43,19 +43,19 @@ CREATE TABLE MONHOC(
     CONSTRAINT PK_MONHOC PRIMARY KEY (MAMH)
 );
 CREATE TABLE DIEM(
-    MASV VARCHAR(10) NOT NULL, 
-    MAMH VARCHAR(10) NOT NULL, 
+    MASV VARCHAR(10), 
+    MAMH VARCHAR(10), 
     LANTHI INT, 
     DIEMTHI INT,
     CONSTRAINT FK_DIEM_SINHVIEN FOREIGN KEY (MASV) REFERENCES SINHVIEN(MASV),
     CONSTRAINT FK_DIEM_MONHOC FOREIGN KEY (MAMH) REFERENCES MONHOC(MAMH)
 );
 CREATE TABLE GIANGDAY(
-    MAGV VARCHAR(10) NOT NULL, 
-    MAMH VARCHAR(10) NOT NULL, 
+    MAGV VARCHAR(10), 
+    MAMH VARCHAR(10), 
     NAMHOC VARCHAR(10), 
     HOCKY INT
-    CONSTRAINT PK_GIANGDAY  PRIMARY KEY (MAGV),
+    CONSTRAINT FK_GIANGDAY_GIANGVIEN FOREIGN KEY (MAGV) REFERENCES GIANGVIEN (MAGV),
     CONSTRAINT FK_GIANGDAY_MONHOC FOREIGN KEY (MAMH) REFERENCES MONHOC(MAMH)
 );
 CREATE TABLE THANNHAN(
@@ -65,8 +65,8 @@ CREATE TABLE THANNHAN(
     CONSTRAINT PK_THANNHAN  PRIMARY KEY (MATN)
 );
 CREATE TABLE QUANHE(
-    MATN VARCHAR(10) NOT NULL,
-    MASV VARCHAR(10) NOT NULL,
+    MATN VARCHAR(10) ,
+    MASV VARCHAR(10) ,
     QUANHE NVARCHAR(100),
     CONSTRAINT FK_QUANHE_THANNHAN FOREIGN KEY (MATN) REFERENCES THANNHAN(MATN),
     CONSTRAINT FK_QUANHE_SINHVIEN FOREIGN KEY (MASV) REFERENCES SINHVIEN (MASV)
@@ -83,7 +83,7 @@ VALUES
 INSERT INTO LOP (MALOP, TENLOP, SISO, LOPTRUONG,MAKH)
 VALUES	('10DHSH1',N'10 Đại học Sinh học 1',55,'SV008','SH'),
 		('10DHTH1',N'10 Đại học Tin học 1',50,'SV001','TH'),
-		('10DHTH2',N'11 Đại học Tin học 2',40,'SV005','TH'),
+		('11DHTH2',N'11 Đại học Tin học 2',40,'SV005','TH'),
 		('12DHTC1',N'12 Đại học Tài chính 1',75,'SV009','TC'),
 		('12DHTP1',N'12 Đại học Thực phẩm',60,'SV007','TP');	
 INSERT INTO GIANGVIEN (MAGV, TENGV, MAKH)
@@ -104,7 +104,7 @@ VALUES
     ('TTQT', N'Thanh toán quốc tế', 2);
 INSERT INTO SINHVIEN (MASV, HOTEN, NGSINH, GTINH, DCHI, MALOP)
 VALUES
-    ('SV001', N'Trần Lệ Quyên', '1995-01-21', N'Nữ', N'TPHCM', '10DHTH1'),
+	('SV001', N'Trần Lệ Quyên', '1995-01-21', N'Nữ', N'TPHCM', '10DHTH1'),
     ('SV002', N'Nguyễn Thế Bình', '1996-06-04', N'Nam', N'Tây Ninh', '11DHTH2'),
     ('SV003', N'Tô Ánh Nguyệt', '1995-05-02', N'Nữ', N'Vũng Tàu', '12DHTP1'),
     ('SV004', N'Nguyễn Thế Anh', '1996-12-15', N'Nam', N'Đồng Nai', '12DHTP1'),
@@ -154,3 +154,75 @@ VALUES
     ('TN007', 'SV002', N'Mẹ'),
     ('TN008', 'SV005', N'Bố'),
     ('TN008', 'SV007', N'Bố');
+-- Truy vấn
+
+--2. Cập nhật địa chỉ của sinh viên có mã số SV002 là ‘CẦN THƠ’.
+SELECT * FROM SINHVIEN
+UPDATE SINHVIEN
+SET DCHI = N'CẦN THƠ'
+WHERE MASV = 'SV002';
+--3. Tạo bảng ảo lưu trữ danh sách sinh viên (Mã SV, họ tên), tên lớp tương ứng của sinh viên.
+SELECT SINHVIEN.MASV, SINHVIEN.HOTEN, LOP.TENLOP AS DANHSACHSINHVIEN
+FROM SINHVIEN
+JOIN LOP ON SINHVIEN.MALOP = LOP.MALOP;
+--4. Liệt kê danh sách sinh viên (Mã SV, Họ tên) của những sinh viên có địa chỉ ở Vũng Tàu.
+SELECT MASV, HOTEN
+FROM SINHVIEN
+WHERE DCHI = N'Vũng Tàu';
+--5. Cho biết số tín chỉ của môn Toán rời rạc?
+SELECT SOTC
+FROM MONHOC
+WHERE TENMH = N'Toán rời rạc';
+--6. Cho biết danh sách các lớp (Tên lớp) thuộc khoa Công nghệ Thông tin?
+SELECT TENLOP
+FROM LOP
+JOIN KHOA ON LOP.MAKH = KHOA.MAKH
+WHERE TENKH = N'Công nghệ Thông tin';
+--7.Cho biết danh sách sinh viên (Mã SV, họ tên) của những sinh viên nam có họ “Nguyễn”?
+SELECT MASV, HOTEN
+FROM SINHVIEN
+WHERE GTINH = N'Nam' AND HOTEN LIKE N'Nguyễn%';
+--8. Cho biết họ tên, ngày sinh, địa chỉ của những sinh viên nam học lớp 10DHTH1?
+SELECT MASV, HOTEN, DCHI
+FROM SINHVIEN
+WHERE GTINH = N'Nam' AND MALOP = '10DHTH1'
+--9. Cho biết tên những môn học có 1 hoặc 2 tín chỉ?
+SELECT TENMH
+FROM MONHOC
+WHERE SOTC IN (1, 2);
+--10. Cho biết họ tên, địa chỉ những sinh viên nữ thuộc khoa Công nghệ Thông tin?
+SELECT SINHVIEN.HOTEN, SINHVIEN.DCHI
+FROM SINHVIEN
+JOIN LOP ON SINHVIEN.MALOP = LOP.MALOP
+JOIN KHOA ON LOP.MAKH = KHOA.MAKH
+WHERE KHOA.TENKH = N'Công nghệ Thông tin' AND SINHVIEN.GTINH = N'Nữ';
+--11. Cho biết tên những sinh viên nữ có địa chỉ ở TP. HCM hoặc Vũng Tàu?
+SELECT HOTEN FROM SINHVIEN 
+WHERE GTINH = N'Nữ' AND (DCHI ='TPHCM' OR DCHI = N'Vũng Tàu')
+--12. Cho biết họ tên những sinh viên lớp 10DHTH1 có điểm thi trong khoảng từ 6 đến 8?	
+SELECT SINHVIEN.HOTEN
+FROM SINHVIEN
+JOIN DIEM ON SINHVIEN.MASV = DIEM.MASV
+JOIN LOP ON SINHVIEN.MALOP = LOP.MALOP
+WHERE LOP.TENLOP = '10DHTH1' AND DIEM.DIEMTHI BETWEEN 6 AND 8;
+
+--13. Cho biết những sinh viên khoa Công nghệ Thông tin học môn CSDL có điểm thi lớn hơn 5?
+SELECT SINHVIEN.HOTEN, SINHVIEN.DCHI
+FROM SINHVIEN
+JOIN LOP ON SINHVIEN.MALOP = LOP.MALOP
+JOIN KHOA ON LOP.MAKH = KHOA.MAKH
+--14. Liệt kê danh sách tên khoa và số lượng lớp trong từng khoa.
+--15. Liệt kê danh sách tên lớp và số lượng sinh viên trong từng lớp.
+--16. Liệt kê danh sách tên khoa và số lượng sinh viên trong từng khoa. Sắp xếp các khoa theo thứ tự số lượng sinh viên tăng dần.
+--17. Liệt kê mã sinh viên, họ tên và điểm trung bình của từng sinh viên.
+--18. Cho biết họ tên và tổng số môn học của từng sinh viên nam đã học.
+--19. Cho biết những khoa có ít nhất 2 lớp?
+--20. Cho biết những lớp có ít nhất 2 sinh viên?
+--21. Cho biết danh sách các khoa (TENKHOA) có số lượng sinh viên dưới 500 người.
+--22. Cho biết tên những môn học có số tín chỉ lớn hơn 1 và có ít nhất 2 sinh viên đăng ký học?
+--23. Cho biết tên những môn học có số tín chỉ lớn nhất và số tín chỉ tương ứng?
+--24. Kết hợp thông tin sinh viên và thông tin thân nhân thành một tập kết quả (dùng toán tử Union).
+--25. Cho biết thông tin sinh viên lớp 12DHTP1 (dùng Inner join)?
+--26. Tìm tất cả những sinh viên không có điểm môn học nào (Dùng Left join)?
+--27. Cho biết tên sinh viên và mã tất cả các môn học cùng với điểm số của môn học
+--đó mà sinh viên đã tham gia học (tham gia học là có điểm thi) (Dùng right join)?
