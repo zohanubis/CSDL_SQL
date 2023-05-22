@@ -103,3 +103,20 @@ SET TONGTIEN = (
     FROM CHITIETHD
     WHERE CHITIETHD.MAHD = HOADON.MAHD
 )
+--2. Cho biết tên những linh kiện được sản xuất bởi nhà sản xuất Genius và có đơn vị tính là Cái.
+SELECT TENLK
+FROM LINHKIEN
+WHERE NSX = 'Genius' AND DVT = N'Cái'
+--3. Cho biết thông tin những linh kiện có thời gian bảo hành là 24 tháng.
+SELECT *
+FROM LINHKIEN
+WHERE TGBH = 24
+--4. Hoá đơn nào được lập trong tháng 06/2016?
+SELECT *
+FROM HOADON
+WHERE MONTH(NGAYHD) = 6 AND YEAR(NGAYHD) = 2016
+--5. Tên và đơn vị tính của các linh kiện có đơn giá lớn hơn 1.000.000 VND.
+SELECT LK.TENLK, LK.DVT
+FROM LINHKIEN LK
+INNER JOIN CHITIETHD CT ON LK.MALK = CT.MALK
+WHERE CT.DONGIA > 1000000
