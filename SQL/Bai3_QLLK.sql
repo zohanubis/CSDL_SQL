@@ -120,3 +120,78 @@ SELECT LK.TENLK, LK.DVT
 FROM LINHKIEN LK
 INNER JOIN CHITIETHD CT ON LK.MALK = CT.MALK
 WHERE CT.DONGIA > 1000000
+--6. Thông tin những linh kiện (MALK, TENLK, NSX, DVT) được bán ra trước ngày 31/05/2015.
+SELECT LK.MALK, LK.TENLK, LK.NSX, LK.DVT
+FROM LINHKIEN LK
+INNER JOIN CHITIETHD CT ON LK.MALK = CT.MALK
+INNER JOIN HOADON HD ON CT.MAHD = HD.MAHD
+WHERE HD.NGAYHD < '2015-05-31'
+--7. Cho biết danh sách những khách hàng mua linh kiện trong tháng 06/2016 có địa chỉ ở TP. HCM.(Chưa thêm dữ liệu)
+SELECT KH.*FROM KHACHHANG KH
+INNER JOIN HOADON HD ON KH.MAKH = HD.MAKH
+INNER JOIN CHITIETHD CT ON HD.MAHD = CT.MAHD
+INNER JOIN LINHKIEN LK ON CT.MALK = LK.MALK
+WHERE HD.NGAYHD >= '2016-06-01' AND HD.NGAYHD <= '2016-06-30'
+  AND KH.DCHI LIKE '%TP. HCM%'
+--8. Cho biết tổng số lượng linh kiện trong hoá đơn HD007.
+SELECT SUM(CT.SOLUONG) AS TONG_SOLUONG
+FROM CHITIETHD CT
+WHERE CT.MAHD = 'HD007'
+--9. Trong tháng 05/2016 có bao nhiêu khách hàng ở Tây Ninh đến mua hàng? (Chưa thêm dữ liệu)
+SELECT COUNT(DISTINCT KH.MAKH) AS SOKHACHHANG
+FROM KHACHHANG KH
+INNER JOIN HOADON HD ON KH.MAKH = HD.MAKH
+WHERE HD.NGAYHD >= '2016-05-01' AND HD.NGAYHD <= '2016-05-31'
+  AND KH.DCHI LIKE '%Tây Ninh%'
+--10.Cho biết số điện thoại và địa chỉ của khách hàng có mã KH001.
+SELECT DTHOAI, DCHI
+FROM KHACHHANG
+WHERE MAKH = 'KH001'
+--11.Trong tháng 05/2016 đã lập bao nhiêu đơn hàng?
+SELECT COUNT(*) AS SoDonHang
+FROM HOADON
+WHERE NGAYHD >= '2016-05-01' AND NGAYHD <= '2016-05-31'
+--12.Tổng tiền của hoá đơn HD006 là bao nhiêu?
+SELECT TONGTIEN
+FROM HOADON
+WHERE MAHD = 'HD006'
+--13.Tổng tiền của 2 hoá đơn HD005 và HD007 là bao nhiêu?
+SELECT SUM(TONGTIEN) AS TongTien
+FROM HOADON
+WHERE MAHD IN ('HD005', 'HD007')	
+--14.Liệt kê mã hoá đơn và số linh kiện khác nhau trong từng hoá đơn.
+SELECT MAHD, COUNT(DISTINCT MALK) AS SoLinhKienKhacNhau
+FROM CHITIETHD
+GROUP BY MAHD
+--15.Cho biết tên nhà sản xuất và số linh kiện đã bán của từng nhà sản xuất.
+SELECT LK.NSX, COUNT(CHI.MALK) AS SoLinhKienDaBan
+FROM LINHKIEN LK
+LEFT JOIN CHITIETHD CHI ON LK.MALK = CHI.MALK
+GROUP BY LK.NSX
+--16.Liệt kê mã hoá đơn và tổng tiền của từng hoá đơn.
+SELECT MAHD, TONGTIEN
+FROM HOADON
+--17. Lập danh sách bao gồm tên khách hàng và mã hoá đơn có tổng tiền lớn hơn 10.000.000 VND.
+SELECT KH.TENKH, HD.MAHD
+FROM HOADON HD
+INNER JOIN KHACHHANG KH ON HD.MAKH = KH.MAKH
+WHERE HD.TONGTIEN > 10000000
+--18. Mỗi loại linh kiện có bao nhiêu linh kiện.
+SELECT MALOAI, COUNT(*) AS SoLuongLinhKien
+FROM LINHKIEN
+GROUP BY MALOAI
+
+--19. Những hoá đơn nào (MAHD) có số linh kiện lớn hơn 10? (Chưa thêm dữ liệu)	
+SELECT MAHD
+FROM CHITIETHD
+GROUP BY MAHD
+HAVING COUNT(*) > 10
+--20. Cho biết trị giá của những hoá đơn được lập ngày 07/07/2016.
+SELECT TONGTIEN
+FROM HOADON
+WHERE NGAYHD = '2016-07-07'
+--21. Cho biết tên và số lượng của từng mặt hàng trong hoá đơn HD007
+SELECT LK.TENLK, CT.SOLUONG
+FROM CHITIETHD CT
+JOIN LINHKIEN LK ON CT.MALK = LK.MALK
+WHERE CT.MAHD = 'HD007'
