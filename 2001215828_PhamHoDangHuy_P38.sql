@@ -31,7 +31,7 @@ CREATE TABLE CTHOADON(
 	CONSTRAINT FK_CTHOADON_MATHANG FOREIGN KEY (MAMH) REFERENCES MATHANG(MAMH)
 );
 
---1.Liệt kê danh sách mặt hành không được sản xuất ở Việt Nam, MAMH, TENMH
+--1.Liệt kê danh sách mặt hành không được sản xuất ở Việt Nam (nước sản xuất khác nước Việt Nam), MAMH, TENMH
 SELECT MAMH, TENMH
 FROM MATHANG
 WHERE NUOCSX <> 'Việt Nam';
