@@ -47,4 +47,44 @@ LEFT JOIN DANGKY DK ON TC.MATC = DK.MATC
 WHERE DK.MANV IS NULL;
 
 --2. Cho biết danh sách nhân vien (MANV, HOTEN) tham gia từ 2 trò chơi trở lên
+-- Thêm dữ liệu vào bảng PHONG
+INSERT INTO PHONG (MAPH, TENPHONG, MANQL)
+VALUES ('P1', N'Phòng A', 'NQL1'),
+       ('P2', N'Phòng B', 'NQL2'),
+       ('P3', N'Phòng C', 'NQL1');
+
+-- Thêm dữ liệu vào bảng NHANVIEN
+INSERT INTO NHANVIEN (MANV, HOTEN, NGAYSINH, PHAI, MAPH)
+VALUES ('NV1', N'Nguyễn Văn A', '1990-01-01', N'Nam', 'P1'),
+       ('NV2', N'Lê Thị B', '1985-05-10', N'Nữ', 'P1'),
+       ('NV3', N'Trần Văn C', '1995-03-15', N'Nam', 'P2'),
+       ('NV4', N'Phạm Thị D', '1992-07-20', N'Nữ', 'P2'),
+       ('NV5', N'Lê Văn E', '1988-11-30', N'Nam', 'P3'),
+       ('NV6', N'Nguyễn Thị F', '1993-09-05', N'Nữ', 'P3'),
+       ('NV7', N'Hoàng Văn G', '1998-06-25', N'Nam', 'P1'),
+       ('NV8', N'Trần Thị H', '1991-04-12', N'Nữ', 'P1'),
+       ('NV9', N'Lê Văn I', '1997-02-18', N'Nam', 'P2'),
+       ('NV10', N'Nguyễn Thị K', '1994-08-08', N'Nữ', 'P3');
+
+-- Thêm dữ liệu vào bảng TROCHOI
+INSERT INTO TROCHOI (MATC, TENTROCHOI, NGAYCHOI, SOLUONGDK)
+VALUES ('TC1', N'Trò chơi 1', '2023-01-10', 3),
+       ('TC2', N'Trò chơi 2', '2023-02-15', 5),
+       ('TC3', N'Trò chơi 3', '2023-03-20', 4),
+       ('TC4', N'Trò chơi 4', '2023-04-25', 2),
+       ('TC5', N'Trò chơi 5', '2023-05-01', 6);
+
+-- Thêm dữ liệu vào bảng DANGKY
+INSERT INTO DANGKY (MANV, MATC)
+VALUES ('NV1', 'TC1'),
+       ('NV2', 'TC1'),
+       ('NV3', 'TC1'),
+       ('NV4', 'TC2'),
+       ('NV5', 'TC2'),
+       ('NV6', 'TC3'),
+       ('NV7', 'TC3'),
+       ('NV8', 'TC4'),
+       ('NV9', 'TC4'),
+       ('NV10', 'TC5');
+
 --3. Cho biết danh sách trò chơi (MATC, TENTROCHOI) mà không có nhân viên nào đăng kí
