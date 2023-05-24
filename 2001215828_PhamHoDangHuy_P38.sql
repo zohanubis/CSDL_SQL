@@ -30,3 +30,9 @@ CREATE TABLE CTHOADON(
 	CONSTRAINT FK_CTHOADON_HOADON FOREIGN KEY (SOHD) REFERENCES HOADON(SOHD),
 	CONSTRAINT FK_CTHOADON_MATHANG FOREIGN KEY (MAMH) REFERENCES MATHANG(MAMH)
 );
+
+--1.Liệt kê danh sách mặt hành không được sản xuất ở Việt Nam, MAMH, TENMH
+--2.Cho biết các khách hàng có mua hàng trong tháng 6 năm 2022(NGAYLAPHD từ 01/06/2022 đến 30/06/2022), thông tin gồm
+-- MAKH, HOTEN, DIACHI, DIENTHOAI, NGAYLAPHD
+--3. Hiện thị danh sách mặt hàng(MAMH, TENMH) và số lượng hóa đơn có bán mặt hàng đó. Lưu ý: mặt hàng nào chưa bán thì hiện thị số lượng là 0
+--4. Cho biết mặt hàng(MAMH, TENMH) nào có tổng số lượng bán nhiều nhất
