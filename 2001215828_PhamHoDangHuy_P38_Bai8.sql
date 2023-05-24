@@ -32,5 +32,19 @@ CREATE TABLE DANGKY(
 );
 
 --1. Cho biết danh sách nhân viên (MANV, HOTEN) của phòng ban có tên : N'Tài Chính' và có tuổi >= 50
+SELECT NV.MANV, NV.HOTEN
+FROM NHANVIEN NV
+INNER JOIN PHONG P ON NV.MAPH = P.MAPH
+WHERE P.TENPHONG = N'Tài Chính' AND DATEDIFF(YEAR, NV.NGAYSINH, GETDATE()) >= 50;
+SELECT NV.MANV, NV.HOTEN
+FROM NHANVIEN NV
+INNER JOIN DANGKY DK ON NV.MANV = DK.MANV
+GROUP BY NV.MANV, NV.HOTEN
+HAVING COUNT(DISTINCT DK.MATC) >= 2;
+SELECT TC.MATC, TC.TENTROCHOI
+FROM TROCHOI TC
+LEFT JOIN DANGKY DK ON TC.MATC = DK.MATC
+WHERE DK.MANV IS NULL;
+
 --2. Cho biết danh sách nhân vien (MANV, HOTEN) tham gia từ 2 trò chơi trở lên
 --3. Cho biết danh sách trò chơi (MATC, TENTROCHOI) mà không có nhân viên nào đăng kí
