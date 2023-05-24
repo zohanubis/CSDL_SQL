@@ -1,1 +1,29 @@
 
+INSERT INTO CTHOADON (SOHD, MAMH, SOLUONG, DONGIA)
+VALUES ('HD001', 'MH001', 2, 15000),
+       ('HD001', 'MH002', 1, 25000),
+       ('HD002', 'MH002', 3, 25000),
+       ('HD003', 'MH001', 5, 15000),
+       ('HD003', 'MH003', 2, 12000),
+       ('HD004', 'MH005', 4, 30000),
+       ('HD004', 'MH006', 3, 20000),
+       ('HD005', 'MH004', 1, 35000),
+       ('HD005', 'MH010', 2, 40000),
+       ('HD005', 'MH009', 3, 18000);
+INSERT INTO HOADON (SOHD, NGAYLAPHD, NGAYGIAODK, MAKH)
+VALUES ('HD001', '2022-06-10', '2022-06-15', 'KH001'),
+       ('HD002', '2022-06-12', '2022-06-18', 'KH002'),
+       ('HD003', '2022-06-20', '2022-06-25', 'KH003'),
+       ('HD004', '2022-06-22', '2022-06-27', 'KH001'),
+       ('HD005', '2022-06-25', '2022-06-30', 'KH002');
+INSERT INTO MATHANG (MAMH, TENMH, DVT, NUOCSX)
+VALUES ('MH001', N'Mặt hàng 1', 'Cái', N'Nước sản xuất 1'),
+       ('MH002', N'Mặt hàng 2', 'Cái', N'Nước sản xuất 2'),
+       ('MH003', N'Mặt hàng 3', 'Gói', N'Nước sản xuất 1'),
+       ('MH004', N'Mặt hàng 4', 'Chai', N'Nước sản xuất 3'),
+       ('MH005', N'Mặt hàng 5', 'Hộp', N'Nước sản xuất 2'),
+       ('MH006', N'Mặt hàng 6', 'Kg', N'Nước sản xuất 1'),
+       ('MH007', N'Mặt hàng 7', 'Cái', N'Nước sản xuất 3'),
+       ('MH008', N'Mặt hàng 8', 'Gói', N'Nước sản xuất 2'),
+       ('MH009', N'Mặt hàng 9', 'Chai', N'Nước sản xuất 1'),
+       ('MH010', N'Mặt hàng 10', 'Hộp', N'Nước sản xuất 3');
