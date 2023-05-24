@@ -56,4 +56,24 @@ ORDER BY SUM(SOLUONG) DESC
 --2.Cho biết các khách hàng có mua hàng trong tháng 6 năm 2022(NGAYLAPHD từ 01/06/2022 đến 30/06/2022), thông tin gồm
 -- MAKH, HOTEN, DIACHI, DIENTHOAI, NGAYLAPHD
 --3. Hiện thị danh sách mặt hàng(MAMH, TENMH) và số lượng hóa đơn có bán mặt hàng đó. Lưu ý: mặt hàng nào chưa bán thì hiện thị số lượng là 0
---4. Cho biết mặt hàng(MAMH, TENMH) nào có tổng số lượng bán nhiều nhất
+--4. Cho biết mặt hàng(MAMH, TENMH) nào 
+có tổng số lượng bán nhiều nhất
+INSERT INTO KHACHHANG (MAKH, HOTEN, NGAYSINH, DIACHI, DIENTHOAI)
+VALUES ('KH001', N'Nguyễn Văn A', '1990-01-15', N'Hà Nội', '0123456789'),
+       ('KH002', N'Trần Thị B', '1985-05-10', N'Hồ Chí Minh', '0987654321'),
+       ('KH003', N'Phạm Văn C', '1995-08-20', N'Đà Nẵng', '0369876543');
+INSERT INTO MATHANG (MAMH, TENMH, DVT, NUOCSX)
+VALUES ('MH001', N'Bánh mì', 'Cái', N'Việt Nam'),
+       ('MH002', N'Pizza', 'Cái', N'Ý'),
+       ('MH003', N'Bánh tráng', 'Gói', N'Việt Nam');
+INSERT INTO HOADON (SOHD, NGAYLAPHD, NGAYGIAODK, MAKH)
+VALUES ('HD001', '2022-06-10', '2022-06-15', 'KH001'),
+       ('HD002', '2022-06-12', '2022-06-18', 'KH002'),
+       ('HD003', '2022-06-20', '2022-06-25', 'KH003');
+INSERT INTO CTHOADON (SOHD, MAMH, SOLUONG, DONGIA)
+VALUES ('HD001', 'MH001', 2, 15000),
+       ('HD001', 'MH002', 1, 25000),
+       ('HD002', 'MH002', 3, 25000),
+       ('HD003', 'MH001', 5, 15000),
+       ('HD003', 'MH003', 2, 12000);
+
