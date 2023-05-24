@@ -32,9 +32,9 @@ CREATE TABLE DANGKY(
 );
 --Nhập liệu
 INSERT INTO PHONG (MAPH, TENPHONG, MANQL)
-VALUES ('P1', N'Phòng A', 'NQL1'),
-       ('P2', N'Phòng B', 'NQL2'),
-       ('P3', N'Phòng C', 'NQL1');
+VALUES ('P1', N'Tài Chính', 'NQL1'),
+       ('P2', N'Kế Toán', 'NQL2'),
+       ('P3', N'Nhân Sự', 'NQL1');
 INSERT INTO NHANVIEN (MANV, HOTEN, NGAYSINH, PHAI, MAPH)
 VALUES  
 	('NV1', N'Nguyễn Văn Nam', '1990-01-01', N'Nam', 'P1'),
@@ -51,14 +51,16 @@ VALUES
 
 
 INSERT INTO TROCHOI (MATC, TENTROCHOI, NGAYCHOI, SOLUONGDK)
-VALUES ('TC1', N'Trò chơi 1', '2023-01-10', 3),
+VALUES ('TC6', N'Trò chơi 6', '2023-05-01', 0),
+		('TC1', N'Trò chơi 1', '2023-01-10', 3),
        ('TC2', N'Trò chơi 2', '2023-02-15', 5),
        ('TC3', N'Trò chơi 3', '2023-03-20', 4),
        ('TC4', N'Trò chơi 4', '2023-04-25', 2),
        ('TC5', N'Trò chơi 5', '2023-05-01', 6);
 
 INSERT INTO DANGKY (MANV, MATC)
-VALUES ('NV1', 'TC1'),
+VALUES ('NV1', 'TC2'),
+		('NV1', 'TC1'),
        ('NV2', 'TC1'),
        ('NV3', 'TC1'),
        ('NV4', 'TC2'),
@@ -80,7 +82,8 @@ FROM NHANVIEN NV
 INNER JOIN DANGKY DK ON NV.MANV = DK.MANV
 GROUP BY NV.MANV, NV.HOTEN
 HAVING COUNT(DISTINCT DK.MATC) >= 2;
---3. Cho biết danh sách trò chơi (MATC, TENTROCHOI) mà không có nhân viên nào đăng kí
+--3. Cho biết danh sách trò chơi (MATC, TENTROCHOI) mà không có nhân viên nào đăng kí\
+SELECT * FROM TROCHOI
 SELECT TC.MATC, TC.TENTROCHOI
 FROM TROCHOI TC
 LEFT JOIN DANGKY DK ON TC.MATC = DK.MATC
