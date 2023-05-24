@@ -35,20 +35,36 @@ INSERT INTO KHACHHANG (MAKH, HOTEN, NGAYSINH, DIACHI, DIENTHOAI)
 VALUES ('KH001',N'Nguyễn Hoàng Thái Kỳ', '1990-01-15', N'Hà Nội', '0123456789'),
        ('KH002', N'Nguyễn Thanh Sáng', '1985-05-10', N'Hồ Chí Minh', '0987654321'),
        ('KH003',N'Phạm Hồ Đăng Huy', '1995-08-20', N'Đà Nẵng', '0369876543');
+
 INSERT INTO MATHANG (MAMH, TENMH, DVT, NUOCSX)
 VALUES ('MH001', N'Bánh mì', 'Cái', N'Việt Nam'),
-       ('MH002', N'Pizza', 'Cái', N'Ý'),
-       ('MH003', N'Bánh tráng', 'Gói', N'Việt Nam');
+       ('MH002', N'Xúc xích', 'Cái', N'Hàn Quốc'),
+       ('MH003', N'Hạt nêm', 'Gói', N'Việt Nam'),
+       ('MH004', N'Sting', 'Chai', N'Nhật Bản'),
+       ('MH005', N'Sữa đặc', 'Hộp', N'Hàn Quốc'),
+       ('MH006', N'Đường', 'Kg', N'Việt Nam'),
+       ('MH007', N'Chảo', 'Cái', N'Nhật Bản'),
+       ('MH008', N'Bột ngọt', 'Gói', N'Hàn Quốc'),
+       ('MH009', N'Nước mắm', 'Chai', N'Việt Nam'),
+       ('MH010', N'Cá mồi', 'Hộp', N'Nhật Bản');
 INSERT INTO HOADON (SOHD, NGAYLAPHD, NGAYGIAODK, MAKH)
 VALUES ('HD001', '2022-06-10', '2022-06-15', 'KH001'),
        ('HD002', '2022-06-12', '2022-06-18', 'KH002'),
-       ('HD003', '2022-06-20', '2022-06-25', 'KH003');
+       ('HD003', '2022-06-20', '2022-06-25', 'KH003'),
+       ('HD004', '2022-06-22', '2022-06-27', 'KH001'),
+       ('HD005', '2022-06-25', '2022-06-30', 'KH002');
 INSERT INTO CTHOADON (SOHD, MAMH, SOLUONG, DONGIA)
 VALUES ('HD001', 'MH001', 2, 15000),
        ('HD001', 'MH002', 1, 25000),
        ('HD002', 'MH002', 3, 25000),
        ('HD003', 'MH001', 5, 15000),
-       ('HD003', 'MH003', 2, 12000);
+       ('HD003', 'MH003', 2, 12000),
+       ('HD004', 'MH005', 4, 30000),
+       ('HD004', 'MH006', 3, 20000),
+       ('HD005', 'MH004', 1, 35000),
+       ('HD005', 'MH010', 2, 40000),
+       ('HD005', 'MH009', 3, 18000);
+
 --1.Liệt kê danh sách mặt hành không được sản xuất ở Việt Nam, MAMH, TENMH
 SELECT MAMH, TENMH
 FROM MATHANG
@@ -70,3 +86,4 @@ FROM MATHANG
 JOIN CTHOADON ON MATHANG.MAMH = CTHOADON.MAMH
 GROUP BY MATHANG.MAMH, TENMH
 ORDER BY SUM(SOLUONG) DESC
+
