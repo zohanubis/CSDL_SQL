@@ -42,6 +42,61 @@ CREATE TABLE DANGKY (
 	CONSTRAINT FK_DANGKY_LOPHOC FOREIGN KEY (MALH) REFERENCES LOPHOC (MALH)
 );
 
+-- Ràng buộc miền giá trị cho cột THOIGIANHOC trong bảng CHUNGCHI
+ALTER TABLE CHUNGCHI
+ADD CONSTRAINT CHK_CHUNGCHI_THOIGIANHOC
+CHECK (THOIGIANHOC IN (2, 4, 6, 3, 5, 7));
+
+-- Ràng buộc kiểm tra duy nhất cho cột TENLCC trong bảng LOAICC
+ALTER TABLE LOAICC
+ADD CONSTRAINT UK_LOAICC_TENLCC
+UNIQUE (TENLCC);
+
+-- Ràng buộc kiểm tra duy nhất cho cột TENCC trong bảng CHUNGCHI
+ALTER TABLE CHUNGCHI
+ADD CONSTRAINT UK_CHUNGCHI_TENCC
+UNIQUE (TENCC);
+
+-- Ràng buộc giá trị mặc định cho cột TIENCONLAI trong bảng DANGKY
+ALTER TABLE DANGKY
+ADD CONSTRAINT DF_DANGKY_TIENCONLAI
+DEFAULT 0 FOR TIENCONLAI;
+
+-- Trigger kiểm tra học phí trong bảng LOPHOC
+CREATE TRIGGER TRG_LOPHOC_HOCPHI
+ON LOPHOC
+AFTER INSERT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT *
+        FROM inserted
+        WHERE HOCPHI <= 0
+    )
+    BEGIN
+        RAISERROR ('Hoc phi phai lon hon 0.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END;
+END;
+
+-- Trigger kiểm tra tiền đặt cọc trong bảng DANGKY
+CREATE TRIGGER TRG_DANGKY_TIENDATCOC
+ON DANGKY
+AFTER INSERT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT d.MAHV, d.MALH, l.HOCPHI
+        FROM inserted AS d
+        INNER JOIN LOPHOC AS l ON d.MALH = l.MALH
+        WHERE d.TIENDATCOC < l.HOCPHI * 0.5
+    )
+    BEGIN
+        RAISERROR ('Tien dat coc phai lon hon hoac bang 50%% tien hoc phi.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END;
+END;
+
 INSERT INTO LOAICC (MALCC, TENLCC)
 VALUES 
     ('CCA', N'Chứng chỉ A'),

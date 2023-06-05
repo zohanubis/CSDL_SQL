@@ -1,7 +1,7 @@
-CREATE DATABASE QLBHX
-USE QLBHX 
+CREATE DATABASE QL_BachHoaXanh
+USE QL_BachHoaXanh
 --Bảng Nhà Cung Cấp 
-CREATE TABLE NHACC (
+CREATE TABLE NHACUNGCAP (
     MANCC VARCHAR(10) NOT NULL,
     TENNCC NVARCHAR(50) ,
     DIACHINCC VARCHAR(100),
@@ -15,8 +15,7 @@ CREATE TABLE SANPHAM (
     GIA DECIMAL(18,0), 
     SOLUONG INT,
     MANCC VARCHAR(10) NOT NULL,
-	CONSTRAINT PK_SANPHAM PRIMARY KEY (MASP),
-    CONSTRAINT FK_SANPHAM_MANCC FOREIGN KEY (MANCC) REFERENCES NHACC(MANCC)
+	CONSTRAINT PK_SANPHAM PRIMARY KEY (MASP)
 );
 -- Bảng Khách Hàng
 CREATE TABLE KHACHHANG (
@@ -24,27 +23,118 @@ CREATE TABLE KHACHHANG (
     TENKH NVARCHAR(50) ,
     DIACHIKH VARCHAR(100) ,
     PHONE VARCHAR(20) ,
-	CONSTRAINT PK_KHẠCHHANG PRIMARY KEY (MAKH)
+	CONSTRAINT PK_KHACHHANG PRIMARY KEY (MAKH)
 );
 -- Bảng Hóa Đơn
 CREATE TABLE HOADON (
     MAHD VARCHAR(10) NOT NULL,
     MAKH VARCHAR(10) NOT NULL,
-    NGAYHD DATE NOT NULL,
-    TONGTIEN DECIMAL(18,0) NOT NULL,
-	CONSTRAINT PK_HOADON PRIMARY KEY (MAHD),
-    CONSTRAINT FK_HOADON_MAKH FOREIGN KEY (MAKH) REFERENCES KHACHHANG(MAKH)
+    NGAYHD DATE,
+    TONGTIEN DECIMAL(18,0),
+	CONSTRAINT PK_HOADON PRIMARY KEY (MAHD)
 );
 --Bảng Chi Tiết Hóa Đơn
 CREATE TABLE CHITIETHD (
 	MASP VARCHAR(10),
     MAHD VARCHAR(10),
-    SOLUONGSP INT NOT NULL,
-    DONGIA DECIMAL(18,0) NOT NULL, -- Đơn giá của từng món
-	CONSTRAINT PK_CHITIETHD PRIMARY KEY(MASP, MAHD),
-    CONSTRAINT FK_CHITIETHD_MASP FOREIGN KEY (MASP) REFERENCES SANPHAM(MASP),
-    CONSTRAINT FK_CHITIETHD_MAHD FOREIGN KEY (MAHD) REFERENCES HOADON(MAHD)
+    SOLUONGSP INT ,
+    DONGIA DECIMAL(18,0),
+	CONSTRAINT PK_CHITIETHD PRIMARY KEY(MASP, MAHD)
 );
+--Ràng buộc khóa ngoại các bảng 
+-- Bảng Nhà Cung Cấp
+ALTER TABLE SANPHAM
+ADD CONSTRAINT FK_SANPHAM_MANCC FOREIGN KEY (MANCC) REFERENCES NHACUNGCAP(MANCC);
+
+-- Bảng Hóa Đơn
+ALTER TABLE HOADON
+ADD CONSTRAINT FK_HOADON_MAKH FOREIGN KEY (MAKH) REFERENCES KHACHHANG(MAKH);
+
+-- Bảng Chi Tiết Hóa Đơn
+ALTER TABLE CHITIETHD
+ADD CONSTRAINT FK_CHITIETHD_MASP FOREIGN KEY (MASP) REFERENCES SANPHAM(MASP);
+
+ALTER TABLE CHITIETHD
+ADD CONSTRAINT FK_CHITIETHD_MAHD FOREIGN KEY (MAHD) REFERENCES HOADON(MAHD);
+
+
+--Ràng Buộc Toàn Vẹn
+------------------------------Nhà Cung Cấp---------------------------------------------------
+-- Ràng buộc mặc định để đặt giá trị mặc định là 'N/A' cho cột "DIACHINCC"
+ALTER TABLE NHACUNGCAP
+ADD CONSTRAINT DF_NHACUNGCAP_DIACHINCC DEFAULT 'N/A' FOR DIACHINCC;
+
+-- Ràng buộc duy nhất để đảm bảo giá trị trong cột "MANCC" là duy nhất trên mỗi dòng dữ liệu
+ALTER TABLE NHACUNGCAP
+ADD CONSTRAINT UQ_NHACUNGCAP_MANCC UNIQUE (MANCC);
+
+-- Ràng buộc kiểm tra để đảm bảo giá trị trong cột "PHONE" có đúng 10 ký tự số
+ALTER TABLE NHACUNGCAP
+ADD CONSTRAINT CK_NHACUNGCAP_PHONE CHECK (LEN(PHONE) = 10 AND PHONE LIKE '[0-9]%');
+
+-- Ràng buộc kiểm tra để đảm bảo cột "TENNCC" không để trống
+ALTER TABLE NHACUNGCAP
+ADD CONSTRAINT CK_NHACUNGCAP_TENNCC CHECK (TENNCC <> '');
+-------------------------------------------------------------------------------------
+--=============================SẢN PHẨM============================================
+-- Ràng buộc mặc định để đặt giá trị mặc định là 0 cho cột "SOLUONG"
+ALTER TABLE SANPHAM
+ADD CONSTRAINT DF_SANPHAM_SOLUONG DEFAULT 0 FOR SOLUONG;
+
+-- Ràng buộc duy nhất để đảm bảo giá trị trong cột "MASP" là duy nhất trên mỗi dòng dữ liệu
+ALTER TABLE SANPHAM
+ADD CONSTRAINT UQ_SANPHAM_MASP UNIQUE (MASP);
+
+-- Ràng buộc kiểm tra để đảm bảo giá trị trong cột "GIA" là số không âm
+ALTER TABLE SANPHAM
+ADD CONSTRAINT CK_SANPHAM_GIA CHECK (GIA >= 0);
+
+-- Ràng buộc kiểm tra để đảm bảo cột "TENSP" không để trống
+ALTER TABLE SANPHAM
+ADD CONSTRAINT CK_SANPHAM_TENSP CHECK (TENSP <> '');
+-------------------------------------------------------------------------------------
+--=============================KHÁCH HÀNG============================================
+-- Ràng buộc duy nhất để đảm bảo giá trị trong cột "MAKH" là duy nhất trên mỗi dòng dữ liệu
+ALTER TABLE KHACHHANG
+ADD CONSTRAINT UQ_KHACHHANG_MAKH UNIQUE (MAKH);
+
+-- Ràng buộc kiểm tra để đảm bảo giá trị trong cột "PHONE" có đúng 10 ký tự số
+ALTER TABLE KHACHHANG
+ADD CONSTRAINT CK_KHACHHANG_PHONE CHECK (LEN(PHONE) = 10 AND PHONE LIKE '[0-9]%');
+
+-- Ràng buộc kiểm tra để đảm bảo cột "TENKH" không để trống
+ALTER TABLE KHACHHANG
+ADD CONSTRAINT CK_KHACHHANG_TENKH CHECK (TENKH <> '');
+
+-------------------------------------------------------------------------------------
+--=============================HÓA ĐƠN============================================
+-- Ràng buộc duy nhất để đảm bảo giá trị trong cột "MAHD" là duy nhất trên mỗi dòng dữ liệu
+ALTER TABLE HOADON
+ADD CONSTRAINT UQ_HOADON_MASANPHAM UNIQUE (MAHD);
+
+-- Ràng buộc kiểm tra để đảm bảo giá trị trong cột "TONGTIEN" không âm
+ALTER TABLE HOADON
+ADD CONSTRAINT CK_HOADON_TONGTIEN CHECK (TONGTIEN >= 0);
+
+-- Ràng buộc kiểm tra để đảm bảo cột "NGAYHD" không để trống
+ALTER TABLE HOADON
+ADD CONSTRAINT CK_HOADON_NGAYHD CHECK (NGAYHD IS NOT NULL);
+
+-------------------------------------------------------------------------------------
+--==============================CHI TIẾT HÓA ĐƠN===================================
+-- Ràng buộc duy nhất để đảm bảo sự kết hợp duy nhất của cặp (MASP, MAHD)
+ALTER TABLE CHITIETHD
+ADD CONSTRAINT UQ_CHITIETHD_MASP_MAHD UNIQUE (MASP, MAHD);
+
+-- Ràng buộc kiểm tra để đảm bảo giá trị trong cột "SOLUONGSP" không âm
+ALTER TABLE CHITIETHD
+ADD CONSTRAINT CK_CHITIETHD_SOLUONGSP CHECK (SOLUONGSP >= 0);
+
+-- Ràng buộc kiểm tra để đảm bảo cột "DONGIA" không để trống
+ALTER TABLE CHITIETHD
+ADD CONSTRAINT CK_CHITIETHD_DONGIA CHECK (DONGIA IS NOT NULL);
+
+-------------------------------------------------------------------------------------
 
 SET DATEFORMAT DMY
 -- Nhập dữ liệu 
