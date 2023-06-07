@@ -117,7 +117,7 @@ BEGIN
 END
 INSERT INTO CHITIETHD(MASP, MAHD, SOLUONGSP, DONGIA)
 VALUES
-		('SP023', 'HD001', 3, 90000);
+		('SP021', 'HD003', 3, 800000);
 -- TRIGGER kiểm tra điều kiện
 CREATE TRIGGER TR_CHITIETHD_SOLUONGSP
 ON CHITIETHD
@@ -343,29 +343,131 @@ VALUES
 		SELECT * FROM CHITIETHD
 		SELECT * FROM PHIEUNHAP
 		SELECT * FROM CHITIETPN
---In ra danh sách các sản phẩm (MASP,TENSP) do Công ty TNHH Nước Giải Khát cung cấp
+
+UPDATE NHACUNGCAP
+SET PHONE = '0987654321'
+WHERE MANCC = 'NCC001';
+
+UPDATE CHITIETPN
+SET DONGIA = 35000
+WHERE MAPN = 'PN003' AND MASP = 'SP011';
+--===============================================================================
+-- Đăng Huy---
+--1. Lấy tổng số lượng sản phẩm đã nhập theo từng phiếu nhập
+SELECT MAPN, SUM(SOLUONG) AS TONGSOLUONG
+FROM CHITIETPN
+GROUP BY MAPN;
+--2. Lấy danh sách các hóa đơn được khách hàng 'KH001' mua
+SELECT HOADON.MAHD, NGAYHD
+FROM HOADON
+JOIN KHACHHANG ON HOADON.MAKH = KHACHHANG.MAKH
+WHERE KHACHHANG.MAKH = 'KH001';
+--3. Lấy danh sách các sản phẩm đã được bán trong hóa đơn 'HD002
+SELECT SANPHAM.MASP, TENSP, SOLUONGSP, DONGIA
+FROM CHITIETHD
+JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP
+WHERE MAHD = 'HD002';
+--4.Lấy danh sách các sản phẩm và thông tin nhà cung cấp tương ứng
+SELECT SANPHAM.MASP, TENSP, TENNCC
+FROM SANPHAM
+JOIN CHITIETPN ON SANPHAM.MASP = CHITIETPN.MASP
+JOIN PHIEUNHAP ON CHITIETPN.MAPN = PHIEUNHAP.MAPN
+JOIN NHACUNGCAP ON PHIEUNHAP.MANCC = NHACUNGCAP.MANCC;
+--5.Lấy tổng số lượng sản phẩm đã bán trong mỗi hóa đơn:
+SELECT MAHD, SUM(SOLUONGSP) AS TONGSOLUONG
+FROM CHITIETHD
+GROUP BY MAHD;
+---Thái Kỳ---
+--6.Lấy tổng số tiền của mỗi hóa đơn
+SELECT MAHD, SUM(TONGTIEN) AS TONGTIEN
+FROM CHITIETHD
+GROUP BY MAHD;
+--7.Lấy danh sách các hóa đơn và thông tin khách hàng tương ứng
+SELECT HOADON.MAHD, TENKH, NGAYHD
+FROM HOADON
+JOIN KHACHHANG ON HOADON.MAKH = KHACHHANG.MAKH;
+--8.Lấy danh sách các sản phẩm đã được nhập từ nhà cung cấp 'NCC001'
+SELECT SANPHAM.MASP, TENSP, SOLUONG
+FROM SANPHAM
+JOIN CHITIETPN ON SANPHAM.MASP = CHITIETPN.MASP
+JOIN PHIEUNHAP ON CHITIETPN.MAPN = PHIEUNHAP.MAPN
+WHERE PHIEUNHAP.MANCC = 'NCC001';
+--9.Lấy danh sách các hóa đơn được tạo trong khoảng thời gian từ ngày '2023-04-21' đến '2023-04-22'
+SELECT MAHD, MAKH, NGAYHD
+FROM HOADON
+WHERE NGAYHD BETWEEN '2023-04-21' AND '2023-04-22';
+--10.Lấy danh sách các khách hàng và số lượng hóa đơn đã mua
+SELECT KHACHHANG.MAKH, TENKH, COUNT(MAHD) AS TONGHOADON
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+GROUP BY KHACHHANG.MAKH, TENKH;
+---Tiến Danh---
+--11. Lấy danh sách các sản phẩm có đơn giá cao hơn 50,000 đồng
+SELECT TENSP, DONGIA FROM CHITIETHD 
+JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP
+WHERE DONGIA > 50000;
+--12.Lấy tổng giá trị tiền hàng của mỗi hóa đơn (số lượng sản phẩm * đơn giá):
+SELECT MAHD, SUM(SOLUONGSP * DONGIA) AS TONG_TIENHANG 
+FROM CHITIETHD 
+GROUP BY MAHD;
+--13.Lấy thông tin tên nhà cung cấp và ngày nhập hàng của tất cả các phiếu nhập
+SELECT TENNCC, NGAYNHAP 
+FROM PHIEUNHAP 
+INNER JOIN NHACUNGCAP ON PHIEUNHAP.MANCC = NHACUNGCAP.MANCC;
+--14. Lấy thông tin tên sản phẩm, số lượng và đơn giá của tất cả các chi tiết phiếu nhập:
+SELECT TENSP, SOLUONG, DONGIA 
+FROM CHITIETPN 
+INNER JOIN SANPHAM ON CHITIETPN.MASP = SANPHAM.MASP;
+--15. Lấy thông tin tên sản phẩm, số lượng và đơn giá của tất cả các chi tiết hóa đơn
+SELECT TENSP, SOLUONGSP, DONGIA 
+FROM CHITIETHD 
+INNER JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP;
+--Thanh Sáng--
+--16. Lấy thông tin tên khách hàng và địa chỉ của tất cả khách hàng ở TPHCM
+SELECT TENKH, DIACHIKH 
+FROM KHACHHANG 
+WHERE DIACHIKH LIKE N'%TP.HCM%';
+--17. In ra danh sách các sản phẩm (MASP,TENSP) có mã sản phẩm bắt đầu là “SP” và kết thúc là “01”.
 SELECT MASP, TENSP
 FROM SANPHAM
-WHERE MASP IN (
-    SELECT MASP
-    FROM CHITIETPN
-    WHERE MAPN IN (
+WHERE MASP LIKE'SP%01'
+--18. In ra danh sách các sản phẩm (MASP,TENSP) do Công ty TNHH Nước Giải Khát cung cấp
+SELECT MASP, TENSP
+FROM SANPHAM
+WHERE MASP IN (SELECT MASP FROM CHITIETPN WHERE MAPN IN (
         SELECT MAPN
         FROM PHIEUNHAP
         WHERE MANCC = 'NCC001'
     )
 );
---In ra danh sách các sản phẩm (MASP, TENSP) có số lượng khi nhập hàng lớn hơn 100
+--19. In ra danh sách các sản phẩm (MASP, TENSP) có số lượng khi nhập hàng lớn hơn 100
 SELECT MASP, TENSP
 FROM SANPHAM
-WHERE MASP IN (
-    SELECT MASP
-    FROM CHITIETPN
-    WHERE SOLUONG > 100
-);
---Tìm các số hóa đơn đã mua sản phẩm có mã số “SP001” hoặc “SP002"
+WHERE MASP IN ( SELECT MASP FROM CHITIETPN WHERE SOLUONG > 100);
+--20. Tìm các số hóa đơn đã mua sản phẩm có mã số “SP001” hoặc “SP002"
 SELECT MAHD FROM CHITIETHD 
 WHERE MASP IN('SP001','SP002')
+
+--===============================================================================
+--====
+--1.Lấy thông tin mã phiếu nhập, tổng số lượng sản phẩm đã nhập và tổng giá trị tiền hàng trong mỗi phiếu nhập
+SELECT PHIEUNHAP.MAPN, SUM(CHITIETPN.SOLUONG) AS TONG_SOLUONG, 
+						SUM(CHITIETPN.SOLUONG * CHITIETPN.DONGIA) AS TONG_TIENHANG
+FROM PHIEUNHAP LEFT JOIN CHITIETPN ON PHIEUNHAP.MAPN = CHITIETPN.MAPN
+GROUP BY PHIEUNHAP.MAPN;
+--2.Lấy danh sách các sản phẩm có tồn kho ít hơn 50 đơn vị
+SELECT SANPHAM.MASP, TENSP, SUM(SOLUONGSP) AS TONKHO
+FROM CHITIETHD
+JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP
+GROUP BY SANPHAM.MASP, TENSP
+HAVING SUM(SOLUONGSP) < 50;
+--3.Lấy tổng số lượng sản phẩm đã bán trong mỗi hóa đơn và sắp xếp theo thứ tự giảm dần
+SELECT MAHD, SUM(SOLUONGSP) AS TONGSOLUONG
+FROM CHITIETHD
+GROUP BY MAHD
+ORDER BY TONGSOLUONG DESC;
+
+
 -- In ra danh sách các sản phẩm (MASP, TENSP) của Công ty TNHH Nước Giải Khát có giá 10000 đến 15000 
 SELECT MASP, TENSP
 FROM SANPHAM
@@ -384,33 +486,10 @@ AND MASP IN (
     WHERE DONGIA BETWEEN 10000 AND 15000
 );
 
---In ra danh sách các sản phẩm (MASP,TENSP) có mã sản phẩm bắt đầu là “SP” và kết thúc là “01”.
-SELECT MASP, TENSP
-FROM SANPHAM
-WHERE MASP LIKE'SP%01'
+
 -- Lồng Phân Cấp
 
---In ra danh sách các sản phẩm (MASP, TENSP) có giá bán bằng 1 trong 3 mức giá cao nhất.
-SELECT MASP, TENSP
-FROM SANPHAM
-WHERE MASP IN (
-    SELECT MASP
-    FROM CHITIETHD
-    GROUP BY MASP
-    HAVING DONGIA IN (
-        SELECT DISTINCT TOP 3 DONGIA
-        FROM CHITIETHD
-        ORDER BY DONGIA DESC
-    )
-);
 
---In ra 2 khách hàng có tổng tiền hóa đơn cao nhất
-SELECT TOP 2 KHACHHANG.TENKH, SUM(CHITIETHD.TONGTIEN) AS TONGTIEN_HOADON
-FROM KHACHHANG
-JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
-JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
-GROUP BY KHACHHANG.TENKH
-ORDER BY TONGTIEN_HOADON DESC
 
 
 --Tìm khách hàng (MAKH, HOTEN) có số lần mua hàng nhiều nhất. 
@@ -420,15 +499,6 @@ SELECT MAKH, TENKH
 FROM KHACHHANG	
 WHERE MAKH = (SELECT TOP 1 MAKH FROM HOADON GROUP BY MAKH 
 								ORDER BY COUNT(DISTINCT MAHD) DESC)
---Mỗi nhà cung cấp, tìm sản phẩm (MASP,TENSP) có giá bán cao nhất.
-SELECT NHACC.TENNCC, SANPHAM.MASP, SANPHAM.TENSP, SANPHAM.GIA
-FROM NHACC
-JOIN SANPHAM ON NHACC.MANCC = SANPHAM.MANCC
-WHERE SANPHAM.GIA = (
-  SELECT MAX(GIA)
-  FROM SANPHAM
-  WHERE MANCC = NHACC.MANCC
-);
 --Liệt kê tên các sản phẩm được bán trong từng hóa đơn
 SELECT * FROM CHITIETHD
 SELECT HOADON.MAHD, CHITIETHD.MASP,SP.TENSP
@@ -443,31 +513,12 @@ JOIN CHITIETHD CTHD ON HD.MAHD = CTHD.MAHD
 JOIN SANPHAM SP ON SP.MASP = CTHD.MASP
 ORDER BY HD.MAHD ASC;
 
-SELECT SANPHAM.TENSP, NHACC.TENNCC
-FROM SANPHAM
-INNER JOIN NHACC ON SANPHAM.MANCC = NHACC.MANCC
-INNER JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
-INNER JOIN HOADON ON CHITIETHD.MAHD = HOADON.MAHD
-WHERE CHITIETHD.SOLUONGSP > 10 AND HOADON.NGAYHD = '2023-04-21';
 
---Tìm kiếm tên khách hàng và tổng số tiền của tất cả các hóa đơn mà khách hàng đó đã mua
-SELECT KHACHHANG.TENKH, SUM(HOADON.TONGTIEN) AS TONGTIEN
-FROM KHACHHANG
-INNER JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
-GROUP BY KHACHHANG.TENKH;
 --Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã bán ra của từng sản phẩm:
 SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS SOLUONGBAN
 FROM SANPHAM
 INNER JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
 GROUP BY SANPHAM.TENSP;
-
---Tìm kiếm tên nhà cung cấp và tổng số tiền của các hóa đơn mà nhà cung cấp đó cung cấp sản phẩm
-SELECT NHACC.TENNCC, SUM(HOADON.TONGTIEN) AS TONGTIEN
-FROM NHACC
-INNER JOIN SANPHAM ON NHACC.MANCC = SANPHAM.MANCC
-INNER JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
-INNER JOIN HOADON ON CHITIETHD.MAHD = HOADON.MAHD
-GROUP BY NHACC.TENNCC;
 
 --Liệt kê tên khách hàng và tên sản phẩm của các sản phẩm đã mua bởi khách hàng đó
 SELECT KHACHHANG.TENKH, SANPHAM.TENSP
@@ -493,34 +544,150 @@ INNER JOIN HOADON ON CHITIETHD.MAHD = HOADON.MAHD
 WHERE YEAR(HOADON.NGAYHD) = 2023
 GROUP BY SANPHAM.TENSP, MONTH(HOADON.NGAYHD)
 ORDER BY THANG ASC;
---Liệt kê tên nhà cung cấp, tên sản phẩm, số lượng sản phẩm và tổng giá trị đơn hàng của 
---các hóa đơn mà nhà cung cấp có tên là "Công ty TNHH Nước Giải Khát" đã cung cấp sản phẩm.
-SELECT NHACC.TENNCC, SANPHAM.TENSP, CHITIETHD.SOLUONGSP, HOADON.TONGTIEN
-FROM NHACC
-JOIN SANPHAM ON NHACC.MANCC = SANPHAM.MANCC
-JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
-JOIN HOADON ON CHITIETHD.MAHD = HOADON.MAHD
-WHERE NHACC.TENNCC = N'Công ty TNHH Nước Giải Khát';
---Hiển thị tên các sản phẩm và số lượng sản phẩm đã bán ra cho khách hàng có địa chỉ ở thành phố "TPHCM".
-SELECT * FROM KHACHHANG
-SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS SOLUONGBAN
+--======================ĐĂNG HUY===========================================
+--1. Liệt kê tên và số lượng sản phẩm đã được bán trong mỗi hóa đơn
+SELECT HOADON.MAHD, COUNT(CHITIETHD.MASP) AS SoLuongSanPham
+FROM HOADON
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY HOADON.MAHD
+ORDER BY HOADON.MAHD;
+--2.Liệt kê tên nhà cung cấp và số lượng phiếu nhập đã có từng nhà cung cấp
+SELECT NHACUNGCAP.TENNCC, COUNT(PHIEUNHAP.MAPN) AS SoLuongPhieuNhap
+FROM NHACUNGCAP
+JOIN PHIEUNHAP ON NHACUNGCAP.MANCC = PHIEUNHAP.MANCC
+GROUP BY NHACUNGCAP.TENNCC
+ORDER BY NHACUNGCAP.TENNCC;
+--3.Liệt kê tên khách hàng và tổng giá trị các hóa đơn mà khách hàng đã mua,
+--chỉ lấy những khách hàng có tổng giá trị hóa đơn từ 1.000.000 trở lên
+SELECT KHACHHANG.TENKH, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY KHACHHANG.TENKH
+HAVING SUM(CHITIETHD.TONGTIEN) >= 1000000
+ORDER BY KHACHHANG.TENKH;
+--4. Liệt kê tên sản phẩm và tổng giá trị sản phẩm đã bán, 
+--chỉ lấy những sản phẩm có tổng giá trị lớn hơn 500.000
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri
 FROM SANPHAM
 JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
-JOIN HOADON ON CHITIETHD.MAHD = HOADON.MAHD
-JOIN KHACHHANG ON HOADON.MAKH = KHACHHANG.MAKH
-WHERE KHACHHANG.DIACHIKH LIKE '%TP.HCM%'
-GROUP BY SANPHAM.TENSP;
---Tính tổng giá trị đơn hàng của khách hàng có tên là 
---"Phạm Hồ Đăng Huy" và ngày lập hóa đơn từ ngày "2022-04-21" đến ngày "2022-04-23"
-SELECT * FROM HOADON
-SELECT SUM(HOADON.TONGTIEN) AS TONGTIENHD
+GROUP BY SANPHAM.TENSP
+HAVING SUM(CHITIETHD.TONGTIEN) > 500000
+ORDER BY SANPHAM.TENSP;
+--===========================THÁI KỲ===============================================
+--1.Tính tổng giá trị hóa đơn và số lượng sản phẩm đã bán trong mỗi hóa đơn
+SELECT HOADON.MAHD, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri, 
+					COUNT(CHITIETHD.MASP) AS SoLuongSanPham
 FROM HOADON
-JOIN KHACHHANG ON HOADON.MAKH = KHACHHANG.MAKH
-WHERE KHACHHANG.TENKH = N'Phạm Hồ Đăng Huy' AND HOADON.NGAYHD BETWEEN '2022-04-21' AND '2022-04-23';
---Tìm tên nhà cung cấp cung cấp sản phẩm có giá trị đơn đặt hàng cao nhất trong danh sách các đơn đặt hàng
-SELECT NHACC.TENNCC
-FROM NHACC
-JOIN SANPHAM ON NHACC.MANCC = SANPHAM.MANCC
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY HOADON.MAHD	
+ORDER BY HOADON.MAHD;
+--2. Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã bán
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS TongSoLuongDaBan
+FROM SANPHAM
 JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
-JOIN HOADON ON CHITIETHD.MAHD = HOADON.MAHD
-WHERE HOADON.TONGTIEN = (SELECT MAX(TONGTIEN) FROM HOADON);
+GROUP BY SANPHAM.TENSP
+ORDER BY SANPHAM.TENSP;
+--3.Liệt kê tên nhà cung cấp và số lượng phiếu nhập đã có từng nhà cung cấp, 
+--chỉ lấy những nhà cung cấp có số lượng phiếu nhập lớn hơn 2
+SELECT NHACUNGCAP.TENNCC, COUNT(PHIEUNHAP.MAPN) AS SoLuongPhieuNhap
+FROM NHACUNGCAP
+JOIN PHIEUNHAP ON NHACUNGCAP.MANCC = PHIEUNHAP.MANCC
+GROUP BY NHACUNGCAP.TENNCC
+HAVING COUNT(PHIEUNHAP.MAPN) > 2
+ORDER BY NHACUNGCAP.TENNCC;
+--4. Liệt kê tên khách hàng và số lượng hóa đơn mà khách hàng đã có, 
+--chỉ lấy những khách hàng có số lượng hóa đơn ít hơn 3
+SELECT KHACHHANG.TENKH, COUNT(HOADON.MAHD) AS SoLuongHoaDon
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+GROUP BY KHACHHANG.TENKH
+HAVING COUNT(HOADON.MAHD) < 3
+ORDER BY KHACHHANG.TENKH;
+--==============================TIẾN DANH==========================================
+--1.Liệt kê tên khách hàng và tổng giá trị các hóa đơn mà khách hàng đã mua
+SELECT KHACHHANG.TENKH, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY KHACHHANG.TENKH
+ORDER BY KHACHHANG.TENKH;
+--2. Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã nhập
+SELECT SANPHAM.TENSP, SUM(CHITIETPN.SOLUONG) AS TongSoLuongDaNhap
+FROM SANPHAM
+JOIN CHITIETPN ON SANPHAM.MASP = CHITIETPN.MASP
+GROUP BY SANPHAM.TENSP
+ORDER BY SANPHAM.TENSP;
+--3. Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã nhập, 
+--chỉ lấy những sản phẩm có tổng số lượng nhập lớn hơn 10
+SELECT SANPHAM.TENSP, SUM(CHITIETPN.SOLUONG) AS TongSoLuong
+FROM SANPHAM
+JOIN CHITIETPN ON SANPHAM.MASP = CHITIETPN.MASP
+GROUP BY SANPHAM.TENSP
+HAVING SUM(CHITIETPN.SOLUONG) > 10
+ORDER BY SANPHAM.TENSP;
+--4.Liệt kê thông tin nhà cung cấp và số lượng sản phẩm đã nhập trong tháng 4 năm 2023,
+--sắp xếp theo số lượng sản phẩm giảm dần
+SELECT NHACUNGCAP.MANCC, NHACUNGCAP.TENNCC, COUNT(CHITIETPN.MASP) AS TongSoLuongNhap
+FROM NHACUNGCAP
+JOIN PHIEUNHAP ON NHACUNGCAP.MANCC = PHIEUNHAP.MANCC
+JOIN CHITIETPN ON PHIEUNHAP.MAPN = CHITIETPN.MAPN
+WHERE PHIEUNHAP.NGAYNHAP >= '2023-04-01' AND PHIEUNHAP.NGAYNHAP < '2023-05-01'
+GROUP BY NHACUNGCAP.MANCC, NHACUNGCAP.TENNCC
+ORDER BY TongSoLuongNhap DESC;
+--================================THANH SÁNG========================================
+--1.Liệt kê tên khách hàng và số lượng hóa đơn mà khách hàng đã có
+SELECT KHACHHANG.TENKH, COUNT(HOADON.MAHD) AS SoLuongHoaDon
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+GROUP BY KHACHHANG.TENKH
+ORDER BY KHACHHANG.TENKH;
+--2.Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã bán, 
+--chỉ lấy những sản phẩm đã bán hơn 5 sản phẩm
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS TongSoLuong
+FROM SANPHAM
+JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP
+HAVING SUM(CHITIETHD.SOLUONGSP) > 5
+ORDER BY SANPHAM.TENSP;
+--3. Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã bán, 
+--sắp xếp theo tổng số lượng giảm dần
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS TongSoLuong
+FROM SANPHAM
+JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP
+ORDER BY TongSoLuong DESC;
+--4.Liệt kê tên sản phẩm và tổng giá trị sản phẩm đã bán, 
+--sắp xếp theo tổng giá trị tăng dần
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri
+FROM SANPHAM
+JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP
+ORDER BY TongGiaTri;
+--=================================================================================
+
+
+
+
+
+--16. Liệt kê danh sách nhà cung cấp và số lượng sản phẩm đã nhập của 
+--từng nhà cung cấp, sắp xếp theo số lượng sản phẩm nhập giảm dần
+SELECT NHACUNGCAP.MANCC, NHACUNGCAP.TENNCC, COUNT(CHITIETPN.MASP) AS TongSoLuongNhap
+FROM NHACUNGCAP
+JOIN PHIEUNHAP ON NHACUNGCAP.MANCC = PHIEUNHAP.MANCC
+JOIN CHITIETPN ON PHIEUNHAP.MAPN = CHITIETPN.MAPN
+GROUP BY NHACUNGCAP.MANCC, NHACUNGCAP.TENNCC
+ORDER BY TongSoLuongNhap DESC;
+
+
+--18. In ra 2 khách hàng có tổng tiền hóa đơn cao nhất
+SELECT TOP 2 KHACHHANG.TENKH, SUM(CHITIETHD.TONGTIEN) AS TONGTIEN_HOADON
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY KHACHHANG.TENKH
+ORDER BY TONGTIEN_HOADON DESC
+
+
+
+
