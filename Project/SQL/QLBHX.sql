@@ -1,0 +1,690 @@
+CREATE DATABASE QL_BachHoaXanh
+GO
+USE QL_BachHoaXanh
+GO
+--Bảng Nhà Cung Cấp 
+CREATE TABLE NHACUNGCAP (
+    MANCC VARCHAR(10) NOT NULL,
+    TENNCC NVARCHAR(50) ,
+    DIACHINCC NVARCHAR(100),
+    PHONE VARCHAR(20),
+	CONSTRAINT PK_NHACC PRIMARY KEY (MANCC)
+);
+-- Bảng Sản Phẩm
+CREATE TABLE SANPHAM (
+    MASP VARCHAR(10) NOT NULL,
+    TENSP NVARCHAR(50) ,
+	CONSTRAINT PK_SANPHAM PRIMARY KEY (MASP)
+);
+-- Bảng Khách Hàng
+CREATE TABLE KHACHHANG (
+    MAKH VARCHAR(10) NOT NULL,
+    TENKH NVARCHAR(50) ,
+    DIACHIKH NVARCHAR(100) ,
+    PHONE VARCHAR(20) ,
+	CONSTRAINT PK_KHACHHANG PRIMARY KEY (MAKH)
+);
+-- Bảng Hóa Đơn
+CREATE TABLE HOADON (
+    MAHD VARCHAR(10) NOT NULL,
+    MAKH VARCHAR(10) NOT NULL,
+    NGAYHD DATE,
+	CONSTRAINT PK_HOADON PRIMARY KEY (MAHD)
+);
+--Bảng Chi Tiết Hóa Đơn
+CREATE TABLE CHITIETHD (
+	MASP VARCHAR(10),
+    MAHD VARCHAR(10),
+    SOLUONGSP INT ,
+    DONGIA DECIMAL(18,0),
+	TONGTIEN DECIMAL(18,0),
+	CONSTRAINT PK_CHITIETHD PRIMARY KEY(MASP, MAHD)
+);
+--Bảng Phiếu Nhập
+CREATE TABLE PHIEUNHAP(
+	MAPN VARCHAR(10) NOT NULL,
+	NGAYNHAP DATE,
+    MANCC VARCHAR(10) NOT NULL,
+    CONSTRAINT PK_PHIEUNHAPHANG PRIMARY KEY (MAPN)
+);
+-- Bảng Chi Tiết Phiếu Nhập
+CREATE TABLE CHITIETPN (
+    MAPN VARCHAR(10) NOT NULL,
+    MASP VARCHAR(10) NOT NULL,
+    SOLUONG INT,
+    DONGIA DECIMAL(18,0),
+    CONSTRAINT PK_CHITIETPN PRIMARY KEY (MAPN, MASP)
+);
+
+--Ràng buộc khóa ngoại các bảng 
+-- Bảng Hóa Đơn
+ALTER TABLE HOADON
+ADD CONSTRAINT FK_HOADON_MAKH FOREIGN KEY (MAKH) REFERENCES KHACHHANG(MAKH);
+-- Bảng Chi Tiết Hóa Đơn
+ALTER TABLE CHITIETHD
+ADD CONSTRAINT FK_CHITIETHD_MASP FOREIGN KEY (MASP) REFERENCES SANPHAM(MASP),
+	CONSTRAINT FK_CHITIETHD_MAHD FOREIGN KEY (MAHD) REFERENCES HOADON(MAHD);
+-- Bảng Phiếu Nhập
+ALTER TABLE PHIEUNHAP
+ADD CONSTRAINT FK_PHIEUNHAPHANG_MANCC FOREIGN KEY (MANCC) REFERENCES NHACUNGCAP(MANCC);
+-- Bảng Chi Tiết Phiếu Nhập
+ALTER TABLE CHITIETPN
+ADD CONSTRAINT FK_CHITIETPN_MAPN FOREIGN KEY (MAPN) REFERENCES PHIEUNHAP(MAPN),
+    CONSTRAINT FK_CHITIETPN_MASP FOREIGN KEY (MASP) REFERENCES SANPHAM(MASP)
+--====================================================================================
+--Ràng Buộc Toàn Vẹn
+------------------------------------Nhà Cung Cấp--------------------------------------
+ALTER TABLE NHACUNGCAP
+ADD CONSTRAINT UQ_NHACUNGCAP_TENNCC UNIQUE (TENNCC),
+	CONSTRAINT DF_NHACUNGCAP_DIACHINCC DEFAULT N'Không Xác Định' FOR DIACHINCC;
+--=============================SẢN PHẨM============================================
+ALTER TABLE SANPHAM
+ADD CONSTRAINT UQ_SANPHAM_MASP UNIQUE (TENSP);
+--=============================KHÁCH HÀNG============================================
+ALTER TABLE KHACHHANG
+ADD CONSTRAINT UQ_KHACHHANG_MAKH UNIQUE (MAKH),
+	CONSTRAINT DF_KHACHHANG_DIACHIKH DEFAULT N'Không Xác Định' FOR DIACHIKH,
+	CONSTRAINT DF_KHACHHANG_PHONE DEFAULT N'Chưa có số' FOR PHONE;
+
+--==============================CHI TIẾT HÓA ĐƠN===================================
+ALTER TABLE CHITIETHD
+ADD CONSTRAINT CHK_CHITIETHD_SOLUONGSP CHECK (SOLUONGSP >= 0),
+	CONSTRAINT CHK_CHITIETHD_DONGIA CHECK (DONGIA >= 0),
+	CONSTRAINT CHK_CHITIETHD_TONGTIEN CHECK (TONGTIEN >= 0);
+-------------------------	CHI TIẾT PHIẾU NHẬP---------------------------------------
+ALTER TABLE CHITIETPN
+ADD CONSTRAINT CHK_CHITIETPN_SOLUONG CHECK (SOLUONG >= 0),
+	CONSTRAINT CHK_CHITIETPN_DONGIA CHECK (DONGIA >= 0);
+-------------------------------------------------------------------------------------
+--- RÀNG BUỘC TOÀN VẸN TRIGGER
+GO
+CREATE TRIGGER CapNhatTongTien
+ON CHITIETHD
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    -- Cập nhật tổng tiền cho các hóa đơn có thay đổi trong bảng CHITIETHD
+    UPDATE CHITIETHD
+    SET TONGTIEN = SOLUONGSP * DONGIA
+    WHERE MASP IN (SELECT MASP FROM inserted) 
+          AND MAHD IN (SELECT MAHD FROM inserted)
+
+    -- Cập nhật tổng tiền cho các hóa đơn có sản phẩm bị xóa
+    UPDATE CHITIETHD
+    SET TONGTIEN = SOLUONGSP * DONGIA
+    WHERE MAHD IN (SELECT MAHD FROM deleted) 
+          AND MASP NOT IN (SELECT MASP FROM CHITIETHD WHERE MAHD IN (SELECT MAHD FROM inserted))
+END;
+INSERT INTO CHITIETHD(MASP, MAHD, SOLUONGSP, DONGIA)
+VALUES
+		('SP021', 'HD003', 3, 800000);
+SELECT * FROM CHITIETHD
+-- TRIGGER kiểm tra điều kiện
+CREATE TRIGGER TR_CHITIETHD_SOLUONGSP
+ON CHITIETHD
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT chitiet.MASP, chitiet.MAHD
+		FROM CHITIETHD chitiet
+        INNER JOIN inserted i ON chitiet.MASP = i.MASP AND chitiet.MAHD = i.MAHD
+        INNER JOIN CHITIETPN pn ON chitiet.MASP = pn.MASP
+        WHERE chitiet.SOLUONGSP > pn.SOLUONG
+    )
+    BEGIN
+        RAISERROR ('Số lượng sản phẩm của hóa đơn phải nhỏ hơn số lượng sản phẩm của phiếu nhập hàng', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+CREATE TRIGGER TR_CHITIETHD_SOLUONGSP
+ON CHITIETHD
+AFTER INSERT
+AS
+BEGIN
+    IF EXISTS (
+		SELECT i.MASP, i.MAHD
+		FROM inserted i
+        INNER JOIN CHITIETPN pn ON i.MASP = pn.MASP
+        WHERE i.SOLUONGSP > pn.SOLUONG
+    )
+    BEGIN
+        RAISERROR ('Số lượng sản phẩm của hóa đơn phải nhỏ hơn số lượng sản phẩm của phiếu nhập hàng', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+--Nhập lỗi
+INSERT INTO CHITIETHD(MASP, MAHD, SOLUONGSP, DONGIA)
+VALUES
+		('SP001', 'HD002', 60, 7000);
+SET DATEFORMAT DMY
+CREATE TRIGGER Trigger_Check_NhaCungCap_Exists
+ON PHIEUNHAP
+FOR INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        LEFT JOIN NHACUNGCAP n ON i.MANCC = n.MANCC
+        WHERE n.MANCC IS NULL
+    )
+    BEGIN
+        RAISERROR ('Mã Nhà Cung Cấp không hợp lệ', 16, 1);
+        ROLLBACK;
+        RETURN;
+    END;
+END;
+CREATE TRIGGER Trigger_Check_SanPham_Exists
+ON CHITIETHD
+FOR INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        LEFT JOIN SANPHAM s ON i.MASP = s.MASP
+        WHERE s.MASP IS NULL
+    )
+    BEGIN
+        RAISERROR ('Mã Sản Phẩm không hợp lệ', 16, 1);
+        ROLLBACK;
+        RETURN;
+    END;
+END;
+
+
+CREATE TRIGGER Trigger_Check_NgayNhap
+ON PHIEUNHAP
+FOR INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        WHERE i.NGAYNHAP > GETDATE()
+    )
+    BEGIN
+        RAISERROR ('Ngày nhập không hợp lệ', 16, 1);
+        ROLLBACK;
+        RETURN;
+    END;
+END;
+
+
+
+-- Nhập dữ liệu 
+--Nhà Cung Cấp
+INSERT INTO NHACUNGCAP (MANCC, TENNCC, DIACHINCC, PHONE)
+VALUES 
+		('NCC001', N'Công ty TNHH Nước Giải Khát', N'Bình Dương', '030137752'),
+		('NCC002', N'Công ty TNHH Thực Phẩm', N'TPHCM', '0985331366'),
+		('NCC003', N'Công Ty TNHH Hàng Tiêu Dùng', N'TPHCM', '0901892899');
+
+INSERT INTO SANPHAM (MASP, TENSP) 
+VALUES
+		('SP001', N'Fanta cam'),
+		('SP002', N'Sting đỏ'),
+		('SP003', N'Sting vàng'),
+		('SP004', N'Cocacola'),
+		('SP005', N'Pepsi'),
+		('SP006', N'Trà ô long TeaPlus'),
+		('SP007', N'Redbull'),
+		('SP008', N'Nutriboost'),
+		('SP009', N'Revive'),
+		('SP010', N'Warrior'),
+		('SP011', N'Trứng gà'),
+		('SP012', N'Trứng vịt'),
+		('SP013', N'Mì gói'),
+		('SP014', N'Xúc Xích'),
+		('SP015', N'Bánh Snack'),
+		('SP016', N'Sữa chua'),
+		('SP017', N'Sữa đóng hộp'),
+		('SP018', N'Kẹo'),
+		('SP019', N'Kem'),
+		('SP020', N'Bộ dao 6 cái'),
+		('SP021', N'Bộ nồi inox'),
+		('SP022', N'Thùng rác'),
+		('SP023', N'Bộ chén dĩa'),
+		('SP024', N'Túi đựng'),
+		('SP025', N'Màng bọc thực phẩm'),
+		('SP026', N'Thau nhựa'),
+		('SP027', N'Bình nước'),
+		('SP028', N'Chảo chống dính');
+INSERT INTO KHACHHANG(MAKH, TENKH, DIACHIKH, PHONE)
+VALUES	('KH001', N'Phạm Hồ Đăng Huy', N'TP.HCM', '0779139003'),
+		('KH002', N'Nguyễn Hoàng Thái Kỳ', N'Phú Yên', '0987654321'),
+		('KH003', N'Nguyễn Thanh Sáng', N'TP.HCM', '0912345678'),
+		('KH004', N'Trần Tiến Danh', N'TP.HCM', '0912984932'),
+		('KH005', N'Nguyễn Văn Nam', N'Tây Ninh', '0989751723'),
+		('KH006', N'Nguyễn Kim Anh', N'TP.HCM', '0912345654'),
+		('KH007', N'Nguyễn Thị Châu', N'Vũng Tàu', '0978123765'),
+		('KH008', N'Trần Văn Út', N'Hà Nội', '0909456768'),
+		('KH009', N'Trần Lệ Quyên', N'Hà Nội', '0932987567'),
+		('KH010', N'Bùi Đức Chí', N'TP.HCM', '0989123456')
+INSERT INTO HOADON(MAHD, MAKH, NGAYHD)
+VALUES ('HD001', 'KH001', '2023-04-21'),
+       ('HD002', 'KH002', '2023-04-21'),
+       ('HD003', 'KH003', '2023-04-22'),
+       ('HD004', 'KH002', '2023-04-23'),
+       ('HD005', 'KH001', '2023-04-23');
+INSERT INTO CHITIETHD(MASP, MAHD, SOLUONGSP, DONGIA)
+VALUES
+		('SP001', 'HD001', 3, 7000),
+		('SP003', 'HD001', 10, 10000),
+		('SP016', 'HD001', 7, 30000),
+		('SP009', 'HD002', 6, 12000),
+		('SP020', 'HD002', 3, 200000),
+		('SP015', 'HD002', 3, 6000),
+		('SP013', 'HD002', 8, 40000),
+		('SP013', 'HD003', 4, 5000),
+		('SP014', 'HD003', 6,  24000),
+		('SP024', 'HD003', 5, 50000),
+		('SP028', 'HD003', 5, 410000),
+		('SP023', 'HD003', 8, 90000),
+		('SP002', 'HD004', 9, 10000),
+		('SP003', 'HD004', 3, 10000),
+		('SP011', 'HD004', 8,  32000),
+		('SP013', 'HD004', 6, 5000),
+		('SP016', 'HD004', 4, 30000),
+		('SP007', 'HD004', 2, 15000),
+		('SP008', 'HD004', 9, 11000),
+		('SP018', 'HD005', 5, 25000),
+		('SP019', 'HD005', 7, 59000),
+		('SP021', 'HD005', 2, 800000),
+		('SP012', 'HD005', 8, 36000);
+
+INSERT INTO PHIEUNHAP (MAPN, NGAYNHAP, MANCC)
+VALUES
+    ('PN001', '2023-04-20', 'NCC001'),
+    ('PN002', '2023-04-21', 'NCC001'),
+    ('PN003', '2023-04-22', 'NCC002'),
+    ('PN004', '2023-04-23', 'NCC003'),
+    ('PN005', '2023-04-24', 'NCC003');
+
+INSERT INTO CHITIETPN (MAPN, MASP, DONGIA, SOLUONG)
+VALUES
+    ('PN001', 'SP001', 7000, 50),
+    ('PN001', 'SP002', 10000, 100),
+    ('PN001', 'SP003', 10000, 100),
+    ('PN001', 'SP004', 9000, 150),
+    ('PN001', 'SP005', 8000, 100),
+    ('PN002', 'SP006', 12000, 80),
+    ('PN002', 'SP007', 15000, 50),
+    ('PN002', 'SP008', 11000, 80),
+    ('PN002', 'SP009', 12000, 120),
+    ('PN002', 'SP010', 8000, 100),
+    ('PN003', 'SP011', 32000, 200),
+    ('PN003', 'SP012', 36000, 200),
+    ('PN003', 'SP013', 5000, 300),
+    ('PN003', 'SP014', 24000, 200),
+    ('PN003', 'SP015', 6000, 200),
+    ('PN003', 'SP016', 30000, 100),
+    ('PN003', 'SP017', 30000, 100),
+    ('PN003', 'SP018', 25000, 100),
+    ('PN003', 'SP019', 59000, 150),
+    ('PN004', 'SP020', 200000, 50),
+    ('PN004', 'SP021', 800000, 20),
+    ('PN004', 'SP022', 150000, 100),
+    ('PN004', 'SP023', 90000, 30),
+    ('PN004', 'SP024', 50000, 20),
+    ('PN005', 'SP025', 250000, 50),
+    ('PN005', 'SP026', 130000, 80),
+    ('PN005', 'SP027', 90000, 50),
+    ('PN005', 'SP028', 410000, 30);
+
+
+-- Xem bảng
+		SELECT * FROM NHACUNGCAP
+		SELECT * FROM KHACHHANG
+		SELECT * FROM SANPHAM
+		SELECT * FROM HOADON
+		SELECT * FROM CHITIETHD
+		SELECT * FROM PHIEUNHAP
+		SELECT * FROM CHITIETPN
+
+UPDATE NHACUNGCAP
+SET PHONE = '0987654321'
+WHERE MANCC = 'NCC001';
+
+UPDATE CHITIETPN
+SET DONGIA = 35000
+WHERE MAPN = 'PN003' AND MASP = 'SP011';
+--===============================================================================
+-- Đăng Huy---
+--1. Lấy tổng số lượng sản phẩm đã nhập theo từng phiếu nhập
+SELECT MAPN, SUM(SOLUONG) AS TONGSOLUONG
+FROM CHITIETPN
+GROUP BY MAPN;
+--2. Lấy danh sách các hóa đơn được khách hàng 'KH001' mua
+SELECT HOADON.MAHD, NGAYHD
+FROM HOADON
+JOIN KHACHHANG ON HOADON.MAKH = KHACHHANG.MAKH
+WHERE KHACHHANG.MAKH = 'KH001';
+--3. Lấy danh sách các sản phẩm đã được bán trong hóa đơn 'HD002
+SELECT SANPHAM.MASP, TENSP, SOLUONGSP, DONGIA
+FROM CHITIETHD
+JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP
+WHERE MAHD = 'HD002';
+--4.Lấy danh sách các sản phẩm và thông tin nhà cung cấp tương ứng
+SELECT SANPHAM.MASP, TENSP, TENNCC
+FROM SANPHAM
+JOIN CHITIETPN ON SANPHAM.MASP = CHITIETPN.MASP
+JOIN PHIEUNHAP ON CHITIETPN.MAPN = PHIEUNHAP.MAPN
+JOIN NHACUNGCAP ON PHIEUNHAP.MANCC = NHACUNGCAP.MANCC;
+--5.Lấy tổng số lượng sản phẩm đã bán trong mỗi hóa đơn:
+SELECT MAHD, SUM(SOLUONGSP) AS TONGSOLUONG
+FROM CHITIETHD
+GROUP BY MAHD;
+---Thái Kỳ---
+--6.Lấy tổng số tiền của mỗi hóa đơn
+SELECT MAHD, SUM(TONGTIEN) AS TONGTIEN
+FROM CHITIETHD
+GROUP BY MAHD;
+--7.Lấy danh sách các hóa đơn và thông tin khách hàng tương ứng
+SELECT HOADON.MAHD, TENKH, NGAYHD
+FROM HOADON
+JOIN KHACHHANG ON HOADON.MAKH = KHACHHANG.MAKH;
+--8.Lấy danh sách các sản phẩm đã được nhập từ nhà cung cấp 'NCC001'
+SELECT SANPHAM.MASP, TENSP, SOLUONG
+FROM SANPHAM
+JOIN CHITIETPN ON SANPHAM.MASP = CHITIETPN.MASP
+JOIN PHIEUNHAP ON CHITIETPN.MAPN = PHIEUNHAP.MAPN
+WHERE PHIEUNHAP.MANCC = 'NCC001';
+--9.Lấy danh sách các hóa đơn được tạo trong khoảng thời gian từ ngày '2023-04-21' đến '2023-04-22'
+SELECT MAHD, MAKH, NGAYHD
+FROM HOADON
+WHERE NGAYHD BETWEEN '2023-04-21' AND '2023-04-22';
+--10.Lấy danh sách các khách hàng và số lượng hóa đơn đã mua
+SELECT KHACHHANG.MAKH, TENKH, COUNT(MAHD) AS TONGHOADON
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+GROUP BY KHACHHANG.MAKH, TENKH;
+---Tiến Danh---
+--11. Lấy danh sách các sản phẩm có đơn giá cao hơn 50,000 đồng
+SELECT TENSP, DONGIA FROM CHITIETHD 
+JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP
+WHERE DONGIA > 50000;
+--12.Lấy tổng giá trị tiền hàng của mỗi hóa đơn (số lượng sản phẩm * đơn giá):
+SELECT MAHD, SUM(SOLUONGSP * DONGIA) AS TONG_TIENHANG 
+FROM CHITIETHD 
+GROUP BY MAHD;
+--13.Lấy thông tin tên nhà cung cấp và ngày nhập hàng của tất cả các phiếu nhập
+SELECT TENNCC, NGAYNHAP 
+FROM PHIEUNHAP 
+INNER JOIN NHACUNGCAP ON PHIEUNHAP.MANCC = NHACUNGCAP.MANCC;
+--14. Lấy thông tin tên sản phẩm, số lượng và đơn giá của tất cả các chi tiết phiếu nhập:
+SELECT TENSP, SOLUONG, DONGIA 
+FROM CHITIETPN 
+INNER JOIN SANPHAM ON CHITIETPN.MASP = SANPHAM.MASP;
+--15. Lấy thông tin tên sản phẩm, số lượng và đơn giá của tất cả các chi tiết hóa đơn
+SELECT TENSP, SOLUONGSP, DONGIA 
+FROM CHITIETHD 
+INNER JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP;
+--Thanh Sáng--
+--16. Lấy thông tin tên khách hàng và địa chỉ của tất cả khách hàng ở TPHCM
+SELECT TENKH, DIACHIKH 
+FROM KHACHHANG 
+WHERE DIACHIKH LIKE N'%TP.HCM%';
+--17. In ra danh sách các sản phẩm (MASP,TENSP) có mã sản phẩm bắt đầu là “SP” và kết thúc là “01”.
+SELECT MASP, TENSP
+FROM SANPHAM
+WHERE MASP LIKE'SP%01'
+--18. In ra danh sách các sản phẩm (MASP,TENSP) do Công ty TNHH Nước Giải Khát cung cấp
+SELECT MASP, TENSP
+FROM SANPHAM
+WHERE MASP IN (SELECT MASP FROM CHITIETPN WHERE MAPN IN (
+        SELECT MAPN
+        FROM PHIEUNHAP
+        WHERE MANCC = 'NCC001'
+    )
+);
+--19. In ra danh sách các sản phẩm (MASP, TENSP) có số lượng khi nhập hàng lớn hơn 100
+SELECT MASP, TENSP
+FROM SANPHAM
+WHERE MASP IN ( SELECT MASP FROM CHITIETPN WHERE SOLUONG > 100);
+--20. Tìm các số hóa đơn đã mua sản phẩm có mã số “SP001” hoặc “SP002"
+SELECT MAHD FROM CHITIETHD 
+WHERE MASP IN('SP001','SP002')
+
+--===============================================================================
+--====
+--1.Lấy thông tin mã phiếu nhập, tổng số lượng sản phẩm đã nhập và tổng giá trị tiền hàng trong mỗi phiếu nhập
+SELECT PHIEUNHAP.MAPN, SUM(CHITIETPN.SOLUONG) AS TONG_SOLUONG, 
+						SUM(CHITIETPN.SOLUONG * CHITIETPN.DONGIA) AS TONG_TIENHANG
+FROM PHIEUNHAP LEFT JOIN CHITIETPN ON PHIEUNHAP.MAPN = CHITIETPN.MAPN
+GROUP BY PHIEUNHAP.MAPN;
+--2.Lấy danh sách các sản phẩm có tồn kho ít hơn 50 đơn vị
+SELECT SANPHAM.MASP, TENSP, SUM(SOLUONGSP) AS TONKHO
+FROM CHITIETHD
+JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP
+GROUP BY SANPHAM.MASP, TENSP
+HAVING SUM(SOLUONGSP) < 50;
+--3.Lấy tổng số lượng sản phẩm đã bán trong mỗi hóa đơn và sắp xếp theo thứ tự giảm dần
+SELECT MAHD, SUM(SOLUONGSP) AS TONGSOLUONG
+FROM CHITIETHD
+GROUP BY MAHD
+ORDER BY TONGSOLUONG DESC;
+
+
+-- In ra danh sách các sản phẩm (MASP, TENSP) của Công ty TNHH Nước Giải Khát có giá 10000 đến 15000 
+SELECT MASP, TENSP
+FROM SANPHAM
+WHERE MASP IN (
+    SELECT MASP
+    FROM CHITIETPN
+    WHERE MAPN IN (
+        SELECT MAPN
+        FROM PHIEUNHAP
+        WHERE MANCC = 'NCC001'
+    )
+)
+AND MASP IN (
+    SELECT MASP
+    FROM CHITIETPN
+    WHERE DONGIA BETWEEN 10000 AND 15000
+);
+
+
+-- Lồng Phân Cấp
+
+
+
+
+--Tìm khách hàng (MAKH, HOTEN) có số lần mua hàng nhiều nhất. 
+SELECT * FROM HOADON 
+SELECT * FROM KHACHHANG
+SELECT MAKH, TENKH
+FROM KHACHHANG	
+WHERE MAKH = (SELECT TOP 1 MAKH FROM HOADON GROUP BY MAKH 
+								ORDER BY COUNT(DISTINCT MAHD) DESC)
+--Liệt kê tên các sản phẩm được bán trong từng hóa đơn
+SELECT * FROM CHITIETHD
+SELECT HOADON.MAHD, CHITIETHD.MASP,SP.TENSP
+FROM HOADON
+INNER JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+JOIN SANPHAM SP ON SP.MASP = CHITIETHD.MASP
+ORDER BY HOADON.MAHD;
+
+SELECT HD.MAHD, SP.TENSP, CTHD.SOLUONGSP
+FROM HOADON HD
+JOIN CHITIETHD CTHD ON HD.MAHD = CTHD.MAHD
+JOIN SANPHAM SP ON SP.MASP = CTHD.MASP
+ORDER BY HD.MAHD ASC;
+
+
+--Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã bán ra của từng sản phẩm:
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS SOLUONGBAN
+FROM SANPHAM
+INNER JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP;
+
+--Liệt kê tên khách hàng và tên sản phẩm của các sản phẩm đã mua bởi khách hàng đó
+SELECT KHACHHANG.TENKH, SANPHAM.TENSP
+FROM KHACHHANG
+INNER JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+INNER JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+INNER JOIN SANPHAM ON CHITIETHD.MASP = SANPHAM.MASP;
+
+--Liệt kê tên khách hàng và số lượng hóa đơn đã mua của mỗi khách hàng. 
+--Sắp xếp kết quả theo số lượng hóa đơn giảm dần
+SELECT KHACHHANG.TENKH, COUNT(HOADON.MAHD) AS SOHOADON
+FROM KHACHHANG
+INNER JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+GROUP BY KHACHHANG.TENKH
+ORDER BY SOHOADON DESC;
+
+--Liệt kê tên sản phẩm và số lượng sản phẩm đã bán ra trong mỗi tháng của năm 2023. 
+--Sắp xếp kết quả theo tháng tăng dần
+SELECT SANPHAM.TENSP, MONTH(HOADON.NGAYHD) AS THANG, SUM(CHITIETHD.SOLUONGSP) AS SOLUONGBAN
+FROM SANPHAM
+INNER JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+INNER JOIN HOADON ON CHITIETHD.MAHD = HOADON.MAHD
+WHERE YEAR(HOADON.NGAYHD) = 2023
+GROUP BY SANPHAM.TENSP, MONTH(HOADON.NGAYHD)
+ORDER BY THANG ASC;
+--======================ĐĂNG HUY===========================================
+--1. Liệt kê tên và số lượng sản phẩm đã được bán trong mỗi hóa đơn
+SELECT HOADON.MAHD, COUNT(CHITIETHD.MASP) AS SoLuongSanPham
+FROM HOADON
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY HOADON.MAHD
+ORDER BY HOADON.MAHD;
+--2.Liệt kê tên nhà cung cấp và số lượng phiếu nhập đã có từng nhà cung cấp
+SELECT NHACUNGCAP.TENNCC, COUNT(PHIEUNHAP.MAPN) AS SoLuongPhieuNhap
+FROM NHACUNGCAP
+JOIN PHIEUNHAP ON NHACUNGCAP.MANCC = PHIEUNHAP.MANCC
+GROUP BY NHACUNGCAP.TENNCC
+ORDER BY NHACUNGCAP.TENNCC;
+--3.Liệt kê tên khách hàng và tổng giá trị các hóa đơn mà khách hàng đã mua,
+--chỉ lấy những khách hàng có tổng giá trị hóa đơn từ 1.000.000 trở lên
+SELECT KHACHHANG.TENKH, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY KHACHHANG.TENKH
+HAVING SUM(CHITIETHD.TONGTIEN) >= 1000000
+ORDER BY KHACHHANG.TENKH;
+--4. Liệt kê tên sản phẩm và tổng giá trị sản phẩm đã bán, 
+--chỉ lấy những sản phẩm có tổng giá trị lớn hơn 500.000
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri
+FROM SANPHAM
+JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP
+HAVING SUM(CHITIETHD.TONGTIEN) > 500000
+ORDER BY SANPHAM.TENSP;
+--===========================THÁI KỲ===============================================
+--1.Tính tổng giá trị hóa đơn và số lượng sản phẩm đã bán trong mỗi hóa đơn
+SELECT HOADON.MAHD, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri, 
+					COUNT(CHITIETHD.MASP) AS SoLuongSanPham
+FROM HOADON
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY HOADON.MAHD	
+ORDER BY HOADON.MAHD;
+--2. Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã bán
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS TongSoLuongDaBan
+FROM SANPHAM
+JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP
+ORDER BY SANPHAM.TENSP;
+--3.Liệt kê tên nhà cung cấp và số lượng phiếu nhập đã có từng nhà cung cấp, 
+--chỉ lấy những nhà cung cấp có số lượng phiếu nhập lớn hơn 2
+SELECT NHACUNGCAP.TENNCC, COUNT(PHIEUNHAP.MAPN) AS SoLuongPhieuNhap
+FROM NHACUNGCAP
+JOIN PHIEUNHAP ON NHACUNGCAP.MANCC = PHIEUNHAP.MANCC
+GROUP BY NHACUNGCAP.TENNCC
+HAVING COUNT(PHIEUNHAP.MAPN) > 2
+ORDER BY NHACUNGCAP.TENNCC;
+--4. Liệt kê tên khách hàng và số lượng hóa đơn mà khách hàng đã có, 
+--chỉ lấy những khách hàng có số lượng hóa đơn ít hơn 3
+SELECT KHACHHANG.TENKH, COUNT(HOADON.MAHD) AS SoLuongHoaDon
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+GROUP BY KHACHHANG.TENKH
+HAVING COUNT(HOADON.MAHD) < 3
+ORDER BY KHACHHANG.TENKH;
+--==============================TIẾN DANH==========================================
+--1.Liệt kê tên khách hàng và tổng giá trị các hóa đơn mà khách hàng đã mua
+SELECT KHACHHANG.TENKH, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY KHACHHANG.TENKH
+ORDER BY KHACHHANG.TENKH;
+--2. Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã nhập
+SELECT SANPHAM.TENSP, SUM(CHITIETPN.SOLUONG) AS TongSoLuongDaNhap
+FROM SANPHAM
+JOIN CHITIETPN ON SANPHAM.MASP = CHITIETPN.MASP
+GROUP BY SANPHAM.TENSP
+ORDER BY SANPHAM.TENSP;
+--3. Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã nhập, 
+--chỉ lấy những sản phẩm có tổng số lượng nhập lớn hơn 10
+SELECT SANPHAM.TENSP, SUM(CHITIETPN.SOLUONG) AS TongSoLuong
+FROM SANPHAM
+JOIN CHITIETPN ON SANPHAM.MASP = CHITIETPN.MASP
+GROUP BY SANPHAM.TENSP
+HAVING SUM(CHITIETPN.SOLUONG) > 10
+ORDER BY SANPHAM.TENSP;
+--4.Liệt kê thông tin nhà cung cấp và số lượng sản phẩm đã nhập trong tháng 4 năm 2023,
+--sắp xếp theo số lượng sản phẩm giảm dần
+SELECT NHACUNGCAP.MANCC, NHACUNGCAP.TENNCC, COUNT(CHITIETPN.MASP) AS TongSoLuongNhap
+FROM NHACUNGCAP
+JOIN PHIEUNHAP ON NHACUNGCAP.MANCC = PHIEUNHAP.MANCC
+JOIN CHITIETPN ON PHIEUNHAP.MAPN = CHITIETPN.MAPN
+WHERE PHIEUNHAP.NGAYNHAP >= '2023-04-01' AND PHIEUNHAP.NGAYNHAP < '2023-05-01'
+GROUP BY NHACUNGCAP.MANCC, NHACUNGCAP.TENNCC
+ORDER BY TongSoLuongNhap DESC;
+--================================THANH SÁNG========================================
+--1.Liệt kê tên khách hàng và số lượng hóa đơn mà khách hàng đã có
+SELECT KHACHHANG.TENKH, COUNT(HOADON.MAHD) AS SoLuongHoaDon
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+GROUP BY KHACHHANG.TENKH
+ORDER BY KHACHHANG.TENKH;
+--2.Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã bán, 
+--chỉ lấy những sản phẩm đã bán hơn 5 sản phẩm
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS TongSoLuong
+FROM SANPHAM
+JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP
+HAVING SUM(CHITIETHD.SOLUONGSP) > 5
+ORDER BY SANPHAM.TENSP;
+--3. Liệt kê tên sản phẩm và tổng số lượng sản phẩm đã bán, 
+--sắp xếp theo tổng số lượng giảm dần
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.SOLUONGSP) AS TongSoLuong
+FROM SANPHAM
+JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP
+ORDER BY TongSoLuong DESC;
+--4.Liệt kê tên sản phẩm và tổng giá trị sản phẩm đã bán, 
+--sắp xếp theo tổng giá trị tăng dần
+SELECT SANPHAM.TENSP, SUM(CHITIETHD.TONGTIEN) AS TongGiaTri
+FROM SANPHAM
+JOIN CHITIETHD ON SANPHAM.MASP = CHITIETHD.MASP
+GROUP BY SANPHAM.TENSP
+ORDER BY TongGiaTri;
+--=================================================================================
+
+--16. Liệt kê danh sách nhà cung cấp và số lượng sản phẩm đã nhập của 
+--từng nhà cung cấp, sắp xếp theo số lượng sản phẩm nhập giảm dần
+SELECT NHACUNGCAP.MANCC, NHACUNGCAP.TENNCC, COUNT(CHITIETPN.MASP) AS TongSoLuongNhap
+FROM NHACUNGCAP
+JOIN PHIEUNHAP ON NHACUNGCAP.MANCC = PHIEUNHAP.MANCC
+JOIN CHITIETPN ON PHIEUNHAP.MAPN = CHITIETPN.MAPN
+GROUP BY NHACUNGCAP.MANCC, NHACUNGCAP.TENNCC
+ORDER BY TongSoLuongNhap DESC;
+
+
+--18. In ra 2 khách hàng có tổng tiền hóa đơn cao nhất
+SELECT TOP 2 KHACHHANG.TENKH, SUM(CHITIETHD.TONGTIEN) AS TONGTIEN_HOADON
+FROM KHACHHANG
+JOIN HOADON ON KHACHHANG.MAKH = HOADON.MAKH
+JOIN CHITIETHD ON HOADON.MAHD = CHITIETHD.MAHD
+GROUP BY KHACHHANG.TENKH
+ORDER BY TONGTIEN_HOADON DESC
+
+
+
+
